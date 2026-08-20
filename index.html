@@ -1,344 +1,603 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Interactive ALPE-inspired pulmonary oxygen exchange simulator and PETO2 protocol optimizer." />
-  <title>ALPE Design Simulator</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Two-compartment ALPE simulator and PETO2 protocol optimizer">
+<title>ALPE Two-Compartment Simulator</title>
+<style>
+:root{
+  color-scheme:light dark;
+  --bg:#f5f7fa;--surface:#fff;--surface2:#f0f3f7;--text:#16202a;--muted:#617080;
+  --border:#d7dee6;--accent:#2563eb;--accent2:#7c3aed;--accentsoft:#e9f0ff;
+  --good:#137a54;--warn:#9a6211;--danger:#b42318;--shadow:0 6px 22px rgba(30,48,70,.08)
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#0f141b;--surface:#161d26;--surface2:#1c2530;--text:#eef4fa;--muted:#a7b3c0;
+  --border:#314051;--accent:#77a7ff;--accent2:#b58bff;--accentsoft:#182c50;
+  --good:#62d6aa;--warn:#efba63;--danger:#ff8d85;--shadow:none}
+}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}.site-header{border-bottom:1px solid var(--border);background:var(--surface)}
+.header-inner{max-width:1500px;margin:0 auto;padding:24px 30px;display:flex;justify-content:space-between;gap:24px;align-items:flex-start}
+h1{margin:2px 0 4px;font-size:clamp(1.7rem,3vw,2.5rem);letter-spacing:-.03em}h2{margin:0 0 4px;font-size:1.22rem}h3{margin:18px 0 10px;font-size:1rem}
+p{line-height:1.5}.eyebrow{margin:0;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;font-weight:700;font-size:.72rem}
+.subtitle{margin:0;color:var(--muted);max-width:900px}.model-badge{border:1px solid var(--border);border-radius:999px;padding:7px 11px;font-size:.8rem;color:var(--muted);white-space:nowrap;background:var(--surface2)}
+.app-shell{max-width:1500px;margin:0 auto;padding:22px 30px 40px}.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px}
+.tab{border:0;background:transparent;color:var(--muted);padding:9px 14px;border-radius:9px;cursor:pointer}.tab:hover{background:var(--surface2);color:var(--text)}.tab.active{background:var(--accent);color:#fff}
+.tab-panel{display:none}.tab-panel.active{display:block}.two-col{display:grid;grid-template-columns:minmax(340px,.78fr) minmax(520px,1.45fr);gap:18px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:19px;box-shadow:var(--shadow)}
+.panel-heading{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.panel-heading p{margin:3px 0 0;color:var(--muted);font-size:.9rem}
+.control-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.control{display:grid;gap:7px}.control>span{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.control output{color:var(--accent);font-variant-numeric:tabular-nums}.control small,.field small{color:var(--muted);line-height:1.35}
+input[type=range]{width:100%;accent-color:var(--accent)}hr{border:0;border-top:1px solid var(--border);margin:19px 0 4px}
+.compact-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.compact-grid.three{grid-template-columns:repeat(3,1fr)}
+.field{display:grid;gap:5px;color:var(--muted);font-size:.85rem}.field.full{margin-top:11px}.field.short{min-width:120px}
+.field input,.field select,select,input[type=number]{width:100%;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 9px}
+.button-row{display:flex;gap:9px;margin-top:17px;flex-wrap:wrap}.button{border:1px solid var(--border);border-radius:9px;padding:9px 12px;cursor:pointer;font-weight:650}
+.button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.button.secondary{background:var(--surface);color:var(--text)}.button:disabled{opacity:.45;cursor:default}
+.metrics{display:grid;gap:10px;margin:13px 0}.metrics.four{grid-template-columns:repeat(4,1fr)}.metrics.three{grid-template-columns:repeat(3,1fr)}
+.metric{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;min-width:0}.metric span{display:block;color:var(--muted);font-size:.78rem}.metric strong{display:block;margin-top:4px;font-size:1.35rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.metric small{display:block;color:var(--muted);margin-top:3px;line-height:1.3}
+.callout{margin:12px 0 14px;padding:11px 13px;border-radius:11px;background:var(--accentsoft);border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));line-height:1.45}.callout.muted{background:var(--surface2)}
+.chart-wrap{margin:8px 0 16px}.chart-wrap svg{width:100%;height:auto;display:block;overflow:visible}.chart-header{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:5px}.chart-header figcaption{font-weight:700}
+.legend{color:var(--muted);font-size:.8rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.key{display:inline-block;width:21px;height:3px;border-radius:3px;vertical-align:middle}.key.true{background:var(--accent)}.key.fitted{background:var(--accent2)}.key.observed{background:var(--text);height:8px;width:8px;border-radius:50%}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:11px}table{border-collapse:collapse;width:100%;font-size:.84rem}th,td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left}th{background:var(--surface2);color:var(--muted);font-weight:650}tr:last-child td{border-bottom:0}.empty{text-align:center!important;color:var(--muted);padding:22px}
+.status{min-height:1.35em;color:var(--muted);font-size:.88rem;margin:10px 0 0}.subpanel{border-top:1px solid var(--border);margin-top:20px;padding-top:4px}.hidden{display:none!important}
+details.model-notes{margin-top:15px;border-top:1px solid var(--border);padding-top:12px}details.model-notes summary{cursor:pointer;font-weight:650}.equation{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;padding:8px 10px;background:var(--surface2);border-radius:8px;margin:7px 0;font-size:.88rem}
+.warning{border:1px solid color-mix(in srgb,var(--warn) 45%,var(--border));background:color-mix(in srgb,var(--warn) 10%,var(--surface));border-radius:11px;padding:12px 14px;margin-top:12px;line-height:1.45}
+footer{text-align:center;color:var(--muted);font-size:.8rem;padding:0 20px 25px}
+@media(max-width:1050px){.two-col{grid-template-columns:1fr}.control-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:720px){.header-inner,.app-shell{padding-left:15px;padding-right:15px}.header-inner{flex-direction:column}.control-grid,.compact-grid,.compact-grid.three,.metrics.four,.metrics.three{grid-template-columns:1fr 1fr}.panel-heading,.chart-header{flex-direction:column;align-items:stretch}}
+@media(max-width:460px){.control-grid,.compact-grid,.compact-grid.three,.metrics.four,.metrics.three{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
+<header class="site-header">
+  <div class="header-inner">
+    <div>
+      <p class="eyebrow">Pulmonary gas exchange modeling</p>
+      <h1>ALPE Two-Compartment Simulator</h1>
+      <p class="subtitle">Same workflow as the original prototype, now using explicit 10/90 perfusion compartments. Simulate multi-point PETO₂–SpO₂ data, recover fA2 and shunt, derive ONP, then optimize the acquisition protocol.</p>
+    </div>
+    <div class="model-badge">90/10 two-compartment prototype · review</div>
+  </div>
+</header>
+
+<main class="app-shell">
+<nav class="tabs" aria-label="Simulator pages">
+  <button class="tab active" data-tab="simulate" type="button">Simulator</button>
+  <button class="tab" data-tab="optimize" type="button">Optimize protocol</button>
+</nav>
+
+<section id="tab-simulate" class="tab-panel active">
+<div class="two-col">
+<section class="panel controls-panel">
+  <div class="panel-heading"><div><h2>Simulated physiology</h2><p>Set the true two-compartment physiology and acquisition error, then fit the complete multi-point response.</p></div><button id="randomizeSubject" class="button secondary" type="button">Random subject</button></div>
+  <div class="control-grid">
+    <label class="control">
+      <span><b>True fA2</b><output id="trueFaOut"></output></span>
+      <input id="trueFa" type="range" min=".40" max=".90" step=".01" value=".72">
+      <small>Fraction of alveolar ventilation sent to the compartment receiving 90% of nonshunted perfusion. 0.90 = matched V/Q.</small>
+    </label>
+    <label class="control">
+      <span><b>True shunt</b><output id="trueShuntOut"></output></span>
+      <input id="trueShunt" type="range" min="0" max="20" step="1" value="5">
+      <small>Fraction of cardiac output bypassing ventilated gas-exchange compartments.</small>
+    </label>
+    <label class="control">
+      <span><b>SpO₂ random error SD</b><output id="spo2NoiseOut"></output></span>
+      <input id="spo2Noise" type="range" min="0" max="2" step=".1" value=".4">
+      <small>Independent point-to-point pulse-ox / physiologic variability.</small>
+    </label>
+    <label class="control">
+      <span><b>SpO₂ systematic bias</b><output id="spo2BiasOut"></output></span>
+      <input id="spo2Bias" type="range" min="-2" max="2" step=".1" value="0">
+      <small>Constant pulse-ox offset across the simulated subject.</small>
+    </label>
+    <label class="control">
+      <span><b>PETO₂ measurement SD</b><output id="peto2NoiseOut"></output></span>
+      <input id="peto2Noise" type="range" min="0" max="3" step=".25" value=".5">
+      <small>Error in the measured oxygen-axis value.</small>
+    </label>
+    <label class="control">
+      <span><b>Model / steady-state error SD</b><output id="modelNoiseOut"></output></span>
+      <input id="modelNoise" type="range" min="0" max="2" step=".1" value=".3">
+      <small>Residual physiology not explained by the idealized two-compartment model.</small>
+    </label>
+  </div>
+
+  <hr><h3>PETO₂ schedule</h3>
+  <div class="compact-grid">
+    <label class="field">Low PETO₂<input id="simLow" type="number" min="50" max="110" step="1" value="65"></label>
+    <label class="field">High PETO₂<input id="simHigh" type="number" min="90" max="200" step="5" value="150"></label>
+    <label class="field">Number of points<input id="simN" type="number" min="3" max="10" step="1" value="6"></label>
+    <label class="field">Spacing<select id="simSpacing"><option value="equal">Equal PETO₂</option><option value="shoulder">Shoulder + high anchor</option></select></label>
+  </div>
+
+  <details class="model-notes">
+    <summary>Systemic assumptions</summary>
+    <div class="compact-grid" style="margin-top:12px">
+      <label class="field">Alveolar ventilation (L/min)<input id="simVa" type="number" value="4.0" min="2" max="12" step=".1"></label>
+      <label class="field">Cardiac output (L/min)<input id="simQ" type="number" value="5.0" min="2" max="12" step=".1"></label>
+      <label class="field">VO₂ (mL/min)<input id="simVo2" type="number" value="250" min="100" max="600" step="10"></label>
+      <label class="field">Hemoglobin (g/dL)<input id="simHb" type="number" value="14" min="7" max="20" step=".5"></label>
+    </div>
+  </details>
+
+  <div class="button-row"><button id="regenerateNoise" class="button primary" type="button">New noisy measurements</button><button id="exportSimCsv" class="button secondary" type="button">Export CSV</button></div>
+</section>
+
+<section class="panel results-panel">
+  <h2>Parameter recovery</h2>
+  <div class="metrics four">
+    <article class="metric"><span>Fitted fA2</span><strong id="fitFa">—</strong><small id="fitFaDelta"></small></article>
+    <article class="metric"><span>Fitted shunt</span><strong id="fitShunt">—</strong><small id="fitShuntDelta"></small></article>
+    <article class="metric"><span>Derived ONP @100</span><strong id="fitOnp">—</strong><small id="fitOnpDelta"></small></article>
+    <article class="metric"><span>Fit RMSE</span><strong id="fitRmse">—</strong><small>SpO₂ percentage points</small></article>
+  </div>
+  <div id="fitMessage" class="callout"></div>
+
+  <figure class="chart-wrap">
+    <div class="chart-header"><figcaption>PETO₂ → SpO₂ response</figcaption><div class="legend"><span><span class="key true"></span> True</span><span><span class="key fitted"></span> Fitted</span><span><span class="key observed"></span> Observed</span></div></div>
+    <svg id="simChart" viewBox="0 0 760 420" role="img" aria-label="PETO2 versus SpO2 simulator chart"></svg>
+  </figure>
+
+  <div class="metrics three">
+    <article class="metric"><span>True ONP @100</span><strong id="trueOnp100">—</strong><small>derived, not entered</small></article>
+    <article class="metric"><span>V/Q compartment 1</span><strong id="trueVq1">—</strong><small>10% perfusion compartment</small></article>
+    <article class="metric"><span>V/Q compartment 2</span><strong id="trueVq2">—</strong><small>90% perfusion compartment</small></article>
+  </div>
+
+  <div class="table-wrap">
+    <table><thead><tr><th>PETO₂ target</th><th>PETO₂ measured</th><th>True SpO₂</th><th>Observed</th><th>Fitted</th><th>Residual</th></tr></thead><tbody id="simTable"></tbody></table>
+  </div>
+
+  <details class="model-notes">
+    <summary>What changed from the reduced model?</summary>
+    <p style="color:var(--muted)">ONP is no longer subtracted directly from PETO₂. The model fixes nonshunted perfusion at 10% / 90%, uses fA2 to redistribute ventilation, solves oxygen mass balance in each compartment, mixes blood by perfusion, adds shunt, and then derives ONP from the resulting mixed nonshunted capillary blood.</p>
+  </details>
+</section>
+</div>
+</section>
+
+<section id="tab-optimize" class="tab-panel">
+<div class="two-col optimize-layout">
+<section class="panel controls-panel">
+  <div class="panel-heading"><div><h2>Design space</h2><p>Rank PETO₂ schedules across a spectrum of V/Q mismatch, shunt, and measurement errors.</p></div></div>
+
+  <h3>Physiology to protect against</h3>
+  <div class="compact-grid three">
+    <label class="field">fA2 min<input id="optFaMin" type="number" value=".50" min=".35" max=".90" step=".05"></label>
+    <label class="field">fA2 max<input id="optFaMax" type="number" value=".90" min=".40" max=".90" step=".05"></label>
+    <label class="field">fA2 step<input id="optFaStep" type="number" value=".10" min=".025" max=".20" step=".025"></label>
+    <label class="field">Shunt min (%)<input id="optShuntMin" type="number" value="0" min="0" max="25" step="1"></label>
+    <label class="field">Shunt max (%)<input id="optShuntMax" type="number" value="15" min="0" max="30" step="1"></label>
+    <label class="field">Shunt step (%)<input id="optShuntStep" type="number" value="5" min="1" max="10" step="1"></label>
+  </div>
+
+  <h3>Error assumptions</h3>
+  <div class="compact-grid three">
+    <label class="field">SpO₂ SD min (%)<input id="optSpo2Min" type="number" value=".25" min=".1" max="3" step=".05"></label>
+    <label class="field">SpO₂ SD max (%)<input id="optSpo2Max" type="number" value="1.0" min=".1" max="3" step=".1"></label>
+    <label class="field">SpO₂ SD step (%)<input id="optSpo2Step" type="number" value=".25" min=".05" max="1" step=".05"></label>
+    <label class="field">Model error SD (%)<input id="optModelNoise" type="number" value=".5" min="0" max="3" step=".1"></label>
+    <label class="field">PETO₂ SD (mmHg)<input id="optPeto2Noise" type="number" value=".5" min="0" max="5" step=".25"></label>
+    <label class="field">Subject bias prior SD (%)<input id="optBiasSd" type="number" value=".5" min="0" max="3" step=".1"></label>
+    <label class="field">Minimum allowable SpO₂ (%)<input id="optMinSpo2" type="number" value="90" min="85" max="95" step="1"></label>
+  </div>
+
+  <h3>Protocols to search</h3>
+  <div class="compact-grid three">
+    <label class="field">N min<input id="optNMin" type="number" value="3" min="3" max="8" step="1"></label>
+    <label class="field">N max<input id="optNMax" type="number" value="7" min="3" max="10" step="1"></label>
+    <label class="field">Candidate PETO₂ step<input id="optPetStep" type="number" value="5" min="2" max="15" step="1"></label>
+    <label class="field">Low range min<input id="optLowMin" type="number" value="55" min="45" max="140" step="5"></label>
+    <label class="field">Low range max<input id="optLowMax" type="number" value="90" min="50" max="160" step="5"></label>
+    <label class="field">Low step<input id="optLowStep" type="number" value="5" min="2" max="20" step="1"></label>
+    <label class="field">High range min<input id="optHighMin" type="number" value="120" min="80" max="220" step="5"></label>
+    <label class="field">High range max<input id="optHighMax" type="number" value="180" min="90" max="240" step="5"></label>
+    <label class="field">High step<input id="optHighStep" type="number" value="10" min="5" max="25" step="5"></label>
+  </div>
+
+  <label class="field full">Schedule family<select id="optFamily"><option value="equal">Equal PETO₂ spacing</option><option value="shoulder">Shoulder-weighted + high anchor</option><option value="information" selected>Greedy information-weighted</option></select></label>
+  <label class="field full">Optimization priority<select id="optPriority"><option value="onp" selected>Prioritize derived ONP precision</option><option value="balanced">Balanced ONP + shunt</option><option value="minimax">Minimize worst-case ONP uncertainty</option></select></label>
+
+  <details class="model-notes">
+    <summary>Systemic assumptions used during optimization</summary>
+    <div class="compact-grid" style="margin-top:12px">
+      <label class="field">Alveolar ventilation (L/min)<input id="optVa" type="number" value="4.0" min="2" max="12" step=".1"></label>
+      <label class="field">Cardiac output (L/min)<input id="optQ" type="number" value="5.0" min="2" max="12" step=".1"></label>
+      <label class="field">VO₂ (mL/min)<input id="optVo2" type="number" value="250" min="100" max="600" step="10"></label>
+      <label class="field">Hemoglobin (g/dL)<input id="optHb" type="number" value="14" min="7" max="20" step=".5"></label>
+    </div>
+  </details>
+
+  <div class="button-row"><button id="runOptimizer" class="button primary" type="button">Find best protocols</button><button id="exportOptCsv" class="button secondary" type="button" disabled>Export ranked CSV</button></div>
+  <p id="optimizerStatus" class="status" aria-live="polite"></p>
+</section>
+
+<section class="panel results-panel">
+  <h2>Best candidate</h2>
+  <div class="metrics four">
+    <article class="metric"><span>Points</span><strong id="bestN">—</strong><small id="bestSchedule">Run optimizer</small></article>
+    <article class="metric"><span>Median ONP SE</span><strong id="bestOnpSe">—</strong><small>derived ONP @ PETO₂ 100</small></article>
+    <article class="metric"><span>Worst ONP SE</span><strong id="bestWorstOnpSe">—</strong><small>across physiology/error grid</small></article>
+    <article class="metric"><span>Median shunt SE</span><strong id="bestShuntSe">—</strong><small>percentage points</small></article>
+  </div>
+  <div id="bestMessage" class="callout muted">The optimizer will propagate uncertainty in fitted fA2 and shunt into uncertainty of derived ONP.</div>
+
+  <figure class="chart-wrap">
+    <div class="chart-header"><figcaption>Precision versus number of PETO₂ levels</figcaption><div class="legend"><span><span class="key true"></span> Median ONP SE</span><span><span class="key fitted"></span> Worst-case ONP SE</span></div></div>
+    <svg id="nChart" viewBox="0 0 760 360" role="img" aria-label="Protocol precision versus number of PETO2 levels"></svg>
+  </figure>
+
+  <h3>Top designs</h3>
+  <div class="table-wrap">
+    <table><thead><tr><th>Rank</th><th>N</th><th>PETO₂ schedule</th><th>Median ONP SE</th><th>Worst ONP SE</th><th>Median shunt SE</th><th>Median |corr|</th><th>Score</th></tr></thead><tbody id="optTable"><tr><td colspan="8" class="empty">Run the optimizer to rank protocols.</td></tr></tbody></table>
+  </div>
+
+  <div class="subpanel">
+    <div class="panel-heading">
       <div>
-        <p class="eyebrow">Pulmonary gas exchange modeling</p>
-        <h1>ALPE Design Simulator</h1>
-        <p class="subtitle">Explore ONP / V̇/Q̇ mismatch, shunt, measurement error, parameter recovery, and PETO₂ sampling design.</p>
-      </div>
-      <div class="model-badge" title="This version uses a reduced ONP + shunt oxygen-content model.">
-        Reduced ALPE model · v0.1
+        <h3>Minimum adequate N</h3>
+        <p>Find the smallest optimized protocol whose loss of precision versus the largest-N reference is acceptably small.</p>
       </div>
     </div>
-  </header>
 
-  <main class="app-shell">
-    <nav class="tabs" aria-label="Simulator sections">
-      <button class="tab active" data-tab="simulate" type="button">Simulator</button>
-      <button class="tab" data-tab="optimize" type="button">Optimize protocol</button>
-      <button class="tab" data-tab="sensitivity" type="button">Sensitivity</button>
-      <button class="tab" data-tab="methods" type="button">Methods</button>
-    </nav>
+    <div class="compact-grid three">
+      <label class="field">Max acceptable ONP loss (mmHg)
+        <input id="adequateOnpTol" type="number" value="1.0" min="0.1" max="5" step="0.1">
+      </label>
+      <label class="field">Max acceptable shunt loss (points)
+        <input id="adequateShuntTol" type="number" value="0.5" min="0.1" max="5" step="0.1">
+      </label>
+      <label class="field">Bootstrap resamples
+        <input id="adequateBoot" type="number" value="500" min="100" max="3000" step="100">
+      </label>
+    </div>
 
-    <section id="tab-simulate" class="tab-panel active">
-      <div class="two-col">
-        <section class="panel controls-panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Simulated physiology</h2>
-              <p>Set the true physiology and acquisition error, then refit ONP and shunt.</p>
-            </div>
-            <button id="randomizeSubject" class="button secondary" type="button">Random subject</button>
-          </div>
+    <div class="button-row">
+      <button id="runAdequacy" class="button secondary" type="button" disabled>Analyze minimum adequate N</button>
+    </div>
+    <p id="adequacyStatus" class="status" aria-live="polite"></p>
 
-          <div class="control-grid">
-            <label class="control">
-              <span><b>True ONP</b><output id="trueOnpOut"></output></span>
-              <input id="trueOnp" type="range" min="0" max="50" step="1" value="15" />
-              <small>Effective alveolar-to-end-capillary O₂ pressure loss from low V̇/Q̇.</small>
-            </label>
+    <div id="adequacyMetrics" class="metrics four hidden">
+      <article class="metric"><span>Recommended N</span><strong id="adequateN">—</strong><small>smallest non-inferior design</small></article>
+      <article class="metric"><span>Reference N</span><strong id="adequateRefN">—</strong><small>largest optimized protocol</small></article>
+      <article class="metric"><span>ONP loss upper 95%</span><strong id="adequateOnpUcl">—</strong><small>vs reference</small></article>
+      <article class="metric"><span>Shunt loss upper 95%</span><strong id="adequateShuntUcl">—</strong><small>vs reference</small></article>
+    </div>
 
-            <label class="control">
-              <span><b>True shunt</b><output id="trueShuntOut"></output></span>
-              <input id="trueShunt" type="range" min="0" max="25" step="1" value="5" />
-              <small>Fraction of cardiac output bypassing ventilated gas exchange units.</small>
-            </label>
+    <div id="adequacyMessage" class="callout muted hidden"></div>
 
-            <label class="control">
-              <span><b>SpO₂ random error SD</b><output id="spo2NoiseOut"></output></span>
-              <input id="spo2Noise" type="range" min="0" max="2" step="0.1" value="0.4" />
-              <small>Independent point-to-point pulse-ox / physiologic variability.</small>
-            </label>
-
-            <label class="control">
-              <span><b>SpO₂ systematic bias</b><output id="spo2BiasOut"></output></span>
-              <input id="spo2Bias" type="range" min="-2" max="2" step="0.1" value="0" />
-              <small>Constant offset across all measurements for this simulated subject.</small>
-            </label>
-
-            <label class="control">
-              <span><b>PETO₂ measurement SD</b><output id="peto2NoiseOut"></output></span>
-              <input id="peto2Noise" type="range" min="0" max="3" step="0.25" value="0.5" />
-              <small>Error in the measured oxygen-axis value.</small>
-            </label>
-
-            <label class="control">
-              <span><b>Model / steady-state error SD</b><output id="modelNoiseOut"></output></span>
-              <input id="modelNoise" type="range" min="0" max="2" step="0.1" value="0.3" />
-              <small>Residual physiology not captured by the reduced model.</small>
-            </label>
-          </div>
-
-          <hr />
-          <h3>PETO₂ schedule</h3>
-          <div class="compact-grid">
-            <label class="field">Low PETO₂
-              <input id="simLow" type="number" min="45" max="100" step="1" value="55" />
-            </label>
-            <label class="field">High PETO₂
-              <input id="simHigh" type="number" min="80" max="220" step="5" value="150" />
-            </label>
-            <label class="field">Number of points
-              <input id="simN" type="number" min="3" max="10" step="1" value="6" />
-            </label>
-            <label class="field">Spacing
-              <select id="simSpacing">
-                <option value="equal">Equal PETO₂</option>
-                <option value="shoulder">Shoulder + high anchor</option>
-                <option value="information">Information-weighted</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="button-row">
-            <button id="regenerateNoise" class="button primary" type="button">New noisy measurements</button>
-            <button id="exportSimCsv" class="button secondary" type="button">Export CSV</button>
-          </div>
-        </section>
-
-        <section class="panel results-panel">
-          <h2>Parameter recovery</h2>
-          <div class="metrics four">
-            <article class="metric"><span>Fitted ONP</span><strong id="fitOnp">—</strong><small id="fitOnpDelta"></small></article>
-            <article class="metric"><span>Fitted shunt</span><strong id="fitShunt">—</strong><small id="fitShuntDelta"></small></article>
-            <article class="metric"><span>Fit RMSE</span><strong id="fitRmse">—</strong><small>SpO₂ percentage points</small></article>
-            <article class="metric"><span>Reduced χ²</span><strong id="fitChi">—</strong><small>relative to random + model SD</small></article>
-          </div>
-          <div id="fitMessage" class="callout"></div>
-
-          <figure class="chart-wrap">
-            <div class="chart-header">
-              <figcaption>PETO₂ → SpO₂ response</figcaption>
-              <div class="legend"><span class="key true"></span>True <span class="key fitted"></span>Fitted <span class="key observed"></span>Observed</div>
-            </div>
-            <svg id="simChart" viewBox="0 0 760 420" role="img" aria-label="PETO2 versus SpO2 simulator chart"></svg>
-          </figure>
-
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>PETO₂ target</th><th>PETO₂ measured</th><th>True SpO₂</th><th>Observed</th><th>Fitted</th><th>Residual</th></tr></thead>
-              <tbody id="simTable"></tbody>
-            </table>
-          </div>
-        </section>
+    <figure class="chart-wrap">
+      <div class="chart-header">
+        <figcaption>Derived ONP precision versus N</figcaption>
+        <div class="legend"><span><span class="key true"></span> Median ONP SE</span><span><span class="key fitted"></span> Acceptable-loss boundary</span></div>
       </div>
-    </section>
+      <svg id="adequacyChart" viewBox="0 0 760 350" role="img" aria-label="Minimum adequate N analysis"></svg>
+    </figure>
 
-    <section id="tab-optimize" class="tab-panel">
-      <div class="two-col optimize-layout">
-        <section class="panel controls-panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Design space</h2>
-              <p>Search candidate PETO₂ protocols using Fisher-information approximations across a physiology/error grid.</p>
-            </div>
-          </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>N</th><th>Optimized schedule</th><th>Median ONP SE</th><th>ONP loss vs ref (95% CI)</th><th>Shunt loss vs ref (95% CI)</th><th>Detectably worse?</th><th>Adequate?</th></tr></thead>
+        <tbody id="adequacyTable"><tr><td colspan="7" class="empty">Run protocol optimization first.</td></tr></tbody>
+      </table>
+    </div>
 
-          <h3>Physiology to protect against</h3>
-          <div class="compact-grid three">
-            <label class="field">ONP min
-              <input id="optOnpMin" type="number" value="0" min="0" max="50" step="5" />
-            </label>
-            <label class="field">ONP max
-              <input id="optOnpMax" type="number" value="40" min="0" max="60" step="5" />
-            </label>
-            <label class="field">ONP step
-              <input id="optOnpStep" type="number" value="10" min="2" max="20" step="1" />
-            </label>
-            <label class="field">Shunt min (%)
-              <input id="optShuntMin" type="number" value="0" min="0" max="25" step="1" />
-            </label>
-            <label class="field">Shunt max (%)
-              <input id="optShuntMax" type="number" value="15" min="0" max="30" step="1" />
-            </label>
-            <label class="field">Shunt step (%)
-              <input id="optShuntStep" type="number" value="5" min="1" max="10" step="1" />
-            </label>
-          </div>
+    <details class="model-notes">
+      <summary>How “adequate” is defined</summary>
+      <p style="color:var(--muted)">The fast analysis uses Fisher-derived uncertainty for each physiology × error state and a paired bootstrap across those states. A protocol is considered adequate when the <b>upper 95% confidence bound</b> for its ONP precision loss and shunt precision loss versus the largest-N reference both remain below the tolerances above. A difference can therefore be statistically detectable but still too small to justify another PETO₂ steady state.</p>
+    </details>
 
-          <h3>Error assumptions</h3>
-          <div class="compact-grid three">
-            <label class="field">SpO₂ SD min (%)
-              <input id="optSpo2Min" type="number" value="0.25" min="0.1" max="3" step="0.05" />
-            </label>
-            <label class="field">SpO₂ SD max (%)
-              <input id="optSpo2Max" type="number" value="1.0" min="0.1" max="3" step="0.1" />
-            </label>
-            <label class="field">SpO₂ SD step (%)
-              <input id="optSpo2Step" type="number" value="0.25" min="0.05" max="1" step="0.05" />
-            </label>
-            <label class="field">Model error SD (%)
-              <input id="optModelNoise" type="number" value="0.5" min="0" max="3" step="0.1" />
-            </label>
-            <label class="field">PETO₂ SD (mmHg)
-              <input id="optPeto2Noise" type="number" value="0.5" min="0" max="5" step="0.25" />
-            </label>
-            <label class="field">Subject bias prior SD (%)
-              <input id="optBiasSd" type="number" value="0.5" min="0" max="3" step="0.1" />
-            </label>
-            <label class="field">Minimum allowable SpO₂ (%)
-              <input id="optMinSpo2" type="number" value="90" min="85" max="95" step="1" />
-            </label>
-          </div>
-
-          <h3>Protocols to search</h3>
-          <div class="compact-grid three">
-            <label class="field">N min
-              <input id="optNMin" type="number" value="3" min="3" max="8" step="1" />
-            </label>
-            <label class="field">N max
-              <input id="optNMax" type="number" value="7" min="3" max="10" step="1" />
-            </label>
-            <label class="field">Candidate PETO₂ step
-              <input id="optPetStep" type="number" value="5" min="2" max="15" step="1" />
-            </label>
-            <label class="field">Low range min
-              <input id="optLowMin" type="number" value="60" min="45" max="140" step="5" />
-            </label>
-            <label class="field">Low range max
-              <input id="optLowMax" type="number" value="120" min="50" max="160" step="5" />
-            </label>
-            <label class="field">Low step
-              <input id="optLowStep" type="number" value="10" min="2" max="20" step="1" />
-            </label>
-            <label class="field">High range min
-              <input id="optHighMin" type="number" value="120" min="80" max="220" step="5" />
-            </label>
-            <label class="field">High range max
-              <input id="optHighMax" type="number" value="180" min="90" max="240" step="5" />
-            </label>
-            <label class="field">High step
-              <input id="optHighStep" type="number" value="10" min="5" max="25" step="5" />
-            </label>
-          </div>
-
-          <label class="field full">Schedule family
-            <select id="optFamily">
-              <option value="equal">Equal PETO₂ spacing</option>
-              <option value="shoulder">Shoulder-weighted + high anchor</option>
-              <option value="information" selected>Greedy information-weighted</option>
-            </select>
-          </label>
-
-          <label class="field full">Optimization priority
-            <select id="optPriority">
-              <option value="balanced">Balanced ONP + shunt</option>
-              <option value="onp" selected>Prioritize ONP</option>
-              <option value="minimax">Minimize worst-case uncertainty</option>
-            </select>
-          </label>
-
-          <div class="button-row">
-            <button id="runOptimizer" class="button primary" type="button">Find best protocols</button>
-            <button id="exportOptCsv" class="button secondary" type="button" disabled>Export ranked CSV</button>
-          </div>
-          <p id="optimizerStatus" class="status" aria-live="polite"></p>
-        </section>
-
-        <section class="panel results-panel">
-          <h2>Best candidate</h2>
-          <div class="metrics four">
-            <article class="metric"><span>Points</span><strong id="bestN">—</strong><small id="bestSchedule">Run optimizer</small></article>
-            <article class="metric"><span>Median ONP SE</span><strong id="bestOnpSe">—</strong><small>Fisher approximation</small></article>
-            <article class="metric"><span>Worst ONP SE</span><strong id="bestWorstOnpSe">—</strong><small>across physiology grid</small></article>
-            <article class="metric"><span>Median shunt SE</span><strong id="bestShuntSe">—</strong><small>percentage points</small></article>
-          </div>
-          <div id="bestMessage" class="callout muted">The optimizer will compare schedules across the requested ONP/shunt space. PETO₂ noise is propagated through the local curve slope, and systematic SpO₂ bias is treated as a nuisance parameter with a prior.</div>
-
-          <figure class="chart-wrap">
-            <div class="chart-header"><figcaption>Precision versus number of PETO₂ levels</figcaption><div class="legend"><span class="key true"></span>Median ONP SE <span class="key fitted"></span>Worst-case ONP SE</div></div>
-            <svg id="nChart" viewBox="0 0 760 360" role="img" aria-label="Protocol precision versus number of PETO2 levels"></svg>
-          </figure>
-
-          <h3>Top designs</h3>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Rank</th><th>N</th><th>PETO₂ schedule (mmHg)</th><th>Median ONP SE</th><th>Worst ONP SE</th><th>Median shunt SE</th><th>Median |corr|</th><th>Score</th></tr></thead>
-              <tbody id="optTable"><tr><td colspan="8" class="empty">Run the optimizer to rank protocols.</td></tr></tbody>
-            </table>
-          </div>
-
-          <div class="subpanel">
-            <div class="panel-heading">
-              <div><h3>Monte Carlo validation of winner</h3><p>Refit noisy synthetic datasets rather than relying only on local Fisher information.</p></div>
-              <label class="field short">Replicates/scenario
-                <input id="mcReps" type="number" value="30" min="5" max="200" step="5" />
-              </label>
-            </div>
-            <button id="runMonteCarlo" class="button secondary" type="button" disabled>Validate winning design</button>
-            <p id="mcStatus" class="status" aria-live="polite"></p>
-            <div id="mcMetrics" class="metrics four hidden">
-              <article class="metric"><span>ONP RMSE</span><strong id="mcOnpRmse">—</strong><small>mmHg</small></article>
-              <article class="metric"><span>ONP bias</span><strong id="mcOnpBias">—</strong><small>mmHg</small></article>
-              <article class="metric"><span>Shunt RMSE</span><strong id="mcShuntRmse">—</strong><small>percentage points</small></article>
-              <article class="metric"><span>Fit failure</span><strong id="mcFailure">—</strong><small>boundary / nonfinite fits</small></article>
-            </div>
-          </div>
-        </section>
+    <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:10px">
+      <div class="panel-heading">
+        <div>
+          <h3>Paired nonlinear Monte Carlo check</h3>
+          <p>Optionally compare the recommended N directly with the largest-N reference using noisy synthetic data and full refitting.</p>
+        </div>
+        <label class="field short">Replicates/state
+          <input id="adequacyMcReps" type="number" value="2" min="1" max="20" step="1">
+        </label>
       </div>
-    </section>
+      <div class="compact-grid three" style="margin-top:10px">
+        <label class="field">Max extra boundary fits (%)
+          <input id="adequateBoundaryTol" type="number" value="2.0" min="0" max="20" step="0.5">
+        </label>
+      </div>
+      <button id="runAdequacyMc" class="button secondary" type="button" disabled style="margin-top:12px">Validate recommended N vs reference</button>
+      <p id="adequacyMcStatus" class="status" aria-live="polite"></p>
+      <div id="adequacyMcMetrics" class="metrics four hidden">
+        <article class="metric"><span>ONP RMSE loss</span><strong id="adequacyMcOnp">—</strong><small id="adequacyMcOnpCi"></small></article>
+        <article class="metric"><span>Shunt RMSE loss</span><strong id="adequacyMcSh">—</strong><small id="adequacyMcShCi"></small></article>
+        <article class="metric"><span>Extra boundary fits</span><strong id="adequacyMcBoundary">—</strong><small>recommended − reference</small></article>
+        <article class="metric"><span>Non-inferiority</span><strong id="adequacyMcPass">—</strong><small>using selected tolerances</small></article>
+      </div>
+      <div id="adequacyMcMessage" class="callout muted hidden"></div>
+    </div>
+  </div>
 
-    <section id="tab-sensitivity" class="tab-panel">
-      <section class="panel">
-        <div class="panel-heading">
-          <div><h2>Where does each PETO₂ measurement contain information?</h2><p>Local derivatives show how strongly predicted SpO₂ changes with ONP and shunt.</p></div>
-          <div class="inline-controls">
-            <label class="field short">ONP <input id="sensOnp" type="number" value="15" min="0" max="50" step="1" /></label>
-            <label class="field short">Shunt (%) <input id="sensShunt" type="number" value="5" min="0" max="25" step="1" /></label>
-          </div>
-        </div>
-        <div class="metrics three">
-          <article class="metric"><span>Most ONP-sensitive PETO₂</span><strong id="sensBestOnp">—</strong><small>largest |∂SpO₂/∂ONP|</small></article>
-          <article class="metric"><span>Most shunt-sensitive PETO₂</span><strong id="sensBestShunt">—</strong><small>largest |∂SpO₂/∂shunt|</small></article>
-          <article class="metric"><span>Interpretation</span><strong class="small-strong">Shoulder vs plateau</strong><small>The optimal protocol usually needs both parameter directions.</small></article>
-        </div>
-        <figure class="chart-wrap">
-          <div class="chart-header"><figcaption>Normalized local sensitivity across PETO₂</figcaption><div class="legend"><span class="key true"></span>ONP <span class="key fitted"></span>Shunt</div></div>
-          <svg id="sensitivityChart" viewBox="0 0 760 390" role="img" aria-label="Normalized ALPE model sensitivities across PETO2"></svg>
-        </figure>
-        <div class="callout">A point is useful when moving one parameter changes SpO₂ substantially. A set of points is identifiable when ONP and shunt produce <em>different patterns</em> across the selected PETO₂ values, rather than merely having large slopes.</div>
-      </section>
-    </section>
+  <div class="subpanel">
+    <div class="panel-heading"><div><h3>Monte Carlo validation of winner</h3><p>Generate noisy datasets from the explicit two-compartment model and refit fA2 + shunt.</p></div><label class="field short">Replicates/scenario<input id="mcReps" type="number" value="20" min="5" max="100" step="5"></label></div>
+    <button id="runMonteCarlo" class="button secondary" type="button" disabled>Validate winning design</button>
+    <p id="mcStatus" class="status" aria-live="polite"></p>
+    <div id="mcMetrics" class="metrics four hidden">
+      <article class="metric"><span>ONP RMSE</span><strong id="mcOnpRmse">—</strong><small>mmHg @ PETO₂ 100</small></article>
+      <article class="metric"><span>ONP bias</span><strong id="mcOnpBias">—</strong><small>mmHg</small></article>
+      <article class="metric"><span>Shunt RMSE</span><strong id="mcShuntRmse">—</strong><small>percentage points</small></article>
+      <article class="metric"><span>Boundary fits</span><strong id="mcFailure">—</strong><small>fit at search boundary</small></article>
+    </div>
+  </div>
 
-    <section id="tab-methods" class="tab-panel">
-      <section class="panel methods">
-        <h2>What this version calculates</h2>
-        <p>This is an <b>ALPE-inspired reduced model for teaching and experimental-design exploration</b>, not yet a validated reproduction of the proprietary/commercial ALPE implementation. The code deliberately isolates the physiology function so a full two-compartment mass-balance implementation can replace it later.</p>
+  <details class="model-notes">
+    <summary>Model equations and current simplifications</summary>
+    <div class="equation">Q̇₁ = 0.10(1−s)Q̇ &nbsp;&nbsp; Q̇₂ = 0.90(1−s)Q̇</div>
+    <div class="equation">V̇A₁ = (1−fA2)V̇A &nbsp;&nbsp; V̇A₂ = fA2·V̇A</div>
+    <div class="equation">830·V̇Aᵢ(FIO₂−FAO₂ᵢ) = 10·Q̇ᵢ(CcO₂ᵢ−CvO₂)</div>
+    <div class="equation">CaO₂ = (1−s)(0.1CcO₂₁+0.9CcO₂₂) + sCvO₂</div>
+    <div class="equation">ONP = PETO₂ − Pc′O₂</div>
+    <div class="warning"><b>Review prototype:</b> explicit 90/10 architecture, but simplified Hill oxyhemoglobin curve and oxygen-content chemistry. The optimizer should be considered methodological until benchmarked against the exact published ALPE implementation.</div>
+  </details>
+</section>
+</div>
+</section>
+</main>
+<footer>Static browser application. No data are uploaded or stored.</footer>
 
-        <div class="equation-stack">
-          <article><h3>1. Represent low V̇/Q̇ by ONP</h3><div class="equation">P<sub>c′O₂</sub> = P<sub>ET O₂</sub> − ONP</div><p>ONP is treated as the effective pressure loss between mixed alveolar/end-expired oxygen and end-capillary blood before shunt mixing.</p></article>
-          <article><h3>2. Convert PO₂ to oxygen content</h3><div class="equation">C<sub>O₂</sub> = 1.34 · Hb · S<sub>O₂</sub> + 0.0031 · P<sub>O₂</sub></div><p>A Hill oxygen-dissociation curve is used in this prototype (P50 26.8 mmHg, n = 2.7).</p></article>
-          <article><h3>3. Mix shunted venous blood</h3><div class="equation">C<sub>aO₂</sub> = (1 − s)C<sub>c′O₂</sub> + sC<sub>vO₂</sub></div><p>Default Hb is 14 g/dL and mixed-venous saturation 75%; these are currently fixed constants in the source.</p></article>
-          <article><h3>4. Recover ONP and shunt</h3><div class="equation">θ̂ = arg min Σ [SpO₂<sub>obs</sub> − SpO₂<sub>model</sub>(P<sub>ETO₂</sub>, θ)]²</div><p>The simulator uses a coarse-to-fine grid search, making the fitting behavior transparent and robust for two parameters.</p></article>
-          <article><h3>5. Protocol optimization</h3><div class="equation">I(θ) ≈ JᵀWJ + I<sub>prior</sub></div><p>The Jacobian J contains local derivatives with respect to ONP, shunt, and (when enabled) a subject-level saturation bias. The inverse information matrix approximates parameter covariance. PETO₂ error is propagated into effective SpO₂ variance through the local dSpO₂/dPETO₂ slope.</p></article>
-        </div>
+<script>
+'use strict';
+const PBW=713,P50=26.8,HILL=2.7,$=id=>document.getElementById(id),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:NaN;
+const median=a=>{if(!a.length)return NaN;const b=[...a].sort((x,y)=>x-y),m=Math.floor(b.length/2);return b.length%2?b[m]:(b[m-1]+b[m])/2};
+const linspace=(a,b,n)=>n<=1?[a]:Array.from({length:n},(_,i)=>a+(b-a)*i/(n-1));
+const rangeInclusive=(a,b,s)=>{const z=[];if(s<=0)return z;for(let x=a;x<=b+1e-9;x+=s)z.push(+x.toFixed(8));return z};
 
-        <h3>How to interpret the optimizer</h3>
-        <ul>
-          <li><b>Median ONP SE:</b> typical local uncertainty across the requested physiology grid.</li>
-          <li><b>Worst ONP SE:</b> protects against designs that work in normal lungs but fail at severe mismatch.</li>
-          <li><b>Median |corr|:</b> correlation between fitted ONP and shunt; values near 1 indicate poor parameter separation.</li>
-          <li><b>Monte Carlo RMSE:</b> end-to-end error after simulating measurement noise and refitting the nonlinear model.</li>
-        </ul>
+function sat(p){p=Math.max(.001,p);const z=p**HILL;return z/(z+P50**HILL)}
+function content(p,hb){return 1.34*hb*sat(p)+.0031*p}
+function pFromContent(c,hb){let lo=.001,hi=800;for(let i=0;i<42;i++){const m=(lo+hi)/2;if(content(m,hb)<c)lo=m;else hi=m}return(lo+hi)/2}
+function solveCompPO2(cv,va,q,fio2,hb){
+  if(va<1e-10)return .1;
+  let lo=.1,hi=Math.max(.2,fio2*PBW);
+  const g=p=>830*va*(fio2-p/PBW)-10*q*(content(p,hb)-cv);
+  for(let i=0;i<30;i++){const m=(lo+hi)/2;if(g(m)>0)lo=m;else hi=m}
+  return(lo+hi)/2;
+}
+function lung(target,fa,sh,VA,Q,VO2,hb){
+  fa=clamp(fa,.05,.95);sh=clamp(sh,0,.4);VA=Math.max(.2,VA);Q=Math.max(.2,Q);
+  const fio2=target/PBW+VO2/(830*VA),va1=(1-fa)*VA,va2=fa*VA,q1=(1-sh)*.10*Q,q2=(1-sh)*.90*Q,av=VO2/(10*Q);
+  function state(cv){
+    const p1=solveCompPO2(cv,va1,q1,fio2,hb),p2=solveCompPO2(cv,va2,q2,fio2,hb),c1=content(p1,hb),c2=content(p2,hb),cm=.1*c1+.9*c2,ca=(1-sh)*cm+sh*cv;
+    return{p1,p2,c1,c2,cm,ca,r:ca-cv-av};
+  }
+  let lo=0,hi=content(Math.max(target+100,220),hb);
+  for(let i=0;i<34;i++){const m=(lo+hi)/2,r=state(m).r;if(r>0)lo=m;else hi=m}
+  const cv=(lo+hi)/2,s=state(cv),pc=pFromContent(s.cm,hb),pa=pFromContent(s.ca,hb),mixed=(1-fa)*s.p1+fa*s.p2;
+  return{spo2:100*sat(pa),onp:mixed-pc,p1:s.p1,p2:s.p2,vq1:va1/Math.max(q1,1e-9),vq2:va2/Math.max(q2,1e-9),fio2,pc,mixed};
+}
+function scheduleEqual(lo,hi,n){return linspace(lo,hi,n)}
+function scheduleShoulder(lo,hi,n){if(n<=3)return[lo,(lo+Math.min(hi,95))/2,hi].slice(0,n);const top=Math.min(hi-10,Math.max(lo+10,95));return[...linspace(lo,top,n-1),hi]}
 
-        <div class="warning"><b>Research-use caution:</b> protocol choices from this prototype should not be treated as validated ALPE acquisition recommendations. Before using the optimizer to determine a study protocol, the reduced ONP model should be replaced or benchmarked against the full published oxygen-transport model and real RespirAct/pulse-ox data.</div>
-      </section>
-    </section>
-  </main>
+let seed=0xA1B2C3D4;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function randn(r){const u=Math.max(1e-12,r()),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
 
-  <footer>
-    <p>Static browser application. No data are uploaded or stored.</p>
-  </footer>
+function simParams(){return{fa:+$('trueFa').value,sh:+$('trueShunt').value/100,spo2Noise:+$('spo2Noise').value,bias:+$('spo2Bias').value,xNoise:+$('peto2Noise').value,modelNoise:+$('modelNoise').value,lo:+$('simLow').value,hi:+$('simHigh').value,n:Math.round(+$('simN').value),spacing:$('simSpacing').value,VA:+$('simVa').value,Q:+$('simQ').value,VO2:+$('simVo2').value,hb:+$('simHb').value}}
+function updateOutputs(){const p=simParams();$('trueFaOut').textContent=p.fa.toFixed(2);$('trueShuntOut').textContent=(100*p.sh).toFixed(0)+'%';$('spo2NoiseOut').textContent=p.spo2Noise.toFixed(1)+'%';$('spo2BiasOut').textContent=(p.bias>=0?'+':'')+p.bias.toFixed(1)+'%';$('peto2NoiseOut').textContent=p.xNoise.toFixed(2)+' mmHg';$('modelNoiseOut').textContent=p.modelNoise.toFixed(1)+'%'}
+function sse(data,fa,sh,p){let z=0;for(const d of data){const e=d.yObs-lung(d.xObs,fa,sh,p.VA,p.Q,p.VO2,p.hb).spo2;z+=e*e}return z}
+function fitFaSh(data,p){
+  let best={fa:.9,sh:0,sse:Infinity};
+  for(let fa=.40;fa<=.9001;fa+=.025)for(let sh=0;sh<=.2501;sh+=.0125){const z=sse(data,fa,sh,p);if(z<best.sse)best={fa,sh,sse:z}}
+  const f0=best.fa,s0=best.sh;
+  for(let fa=Math.max(.40,f0-.05);fa<=Math.min(.90,f0+.05)+1e-9;fa+=.005)for(let sh=Math.max(0,s0-.025);sh<=Math.min(.30,s0+.025)+1e-9;sh+=.0025){const z=sse(data,fa,sh,p);if(z<best.sse)best={fa,sh,sse:z}}
+  return best;
+}
+let simData=[],simFit=null;
+function generateSim(){
+  const p=simParams();updateOutputs();const lo=Math.min(p.lo,p.hi-5),hi=Math.max(p.hi,p.lo+5),sched=p.spacing==='shoulder'?scheduleShoulder(lo,hi,p.n):scheduleEqual(lo,hi,p.n),r=mulberry32(seed);
+  simData=sched.map(x=>{const y=lung(x,p.fa,p.sh,p.VA,p.Q,p.VO2,p.hb).spo2;return{xTarget:x,xObs:x+p.xNoise*randn(r),yTrue:y,yObs:clamp(y+p.bias+p.spo2Noise*randn(r)+p.modelNoise*randn(r),60,100)}});
+  simFit=fitFaSh(simData,p);renderSim();
+}
+function renderSim(){
+  const p=simParams(),true100=lung(100,p.fa,p.sh,p.VA,p.Q,p.VO2,p.hb),fit100=lung(100,simFit.fa,simFit.sh,p.VA,p.Q,p.VO2,p.hb),rmse=Math.sqrt(simFit.sse/simData.length);
+  $('fitFa').textContent=simFit.fa.toFixed(3);$('fitShunt').textContent=(100*simFit.sh).toFixed(1)+'%';$('fitOnp').textContent=fit100.onp.toFixed(1)+' mmHg';$('fitRmse').textContent=rmse.toFixed(2);
+  const df=simFit.fa-p.fa,ds=100*(simFit.sh-p.sh),do_=fit100.onp-true100.onp;$('fitFaDelta').textContent=`error ${df>=0?'+':''}${df.toFixed(3)}`;$('fitShuntDelta').textContent=`error ${ds>=0?'+':''}${ds.toFixed(1)} pts`;$('fitOnpDelta').textContent=`error ${do_>=0?'+':''}${do_.toFixed(1)} mmHg`;
+  $('trueOnp100').textContent=true100.onp.toFixed(1)+' mmHg';$('trueVq1').textContent=true100.vq1.toFixed(2);$('trueVq2').textContent=true100.vq2.toFixed(2);
+  $('fitMessage').innerHTML=`<b>True V/Q state:</b> fA2 ${p.fa.toFixed(2)} gives V/Q₁ ${true100.vq1.toFixed(2)} and V/Q₂ ${true100.vq2.toFixed(2)}. ONP is derived as ${true100.onp.toFixed(1)} mmHg at PETO₂ 100, rather than specified as an input.`;
+  const tb=$('simTable');tb.innerHTML='';for(const d of simData){const yf=lung(d.xObs,simFit.fa,simFit.sh,p.VA,p.Q,p.VO2,p.hb).spo2,e=d.yObs-yf,tr=document.createElement('tr');tr.innerHTML=`<td>${d.xTarget.toFixed(1)}</td><td>${d.xObs.toFixed(1)}</td><td>${d.yTrue.toFixed(2)}%</td><td>${d.yObs.toFixed(2)}%</td><td>${yf.toFixed(2)}%</td><td>${e>=0?'+':''}${e.toFixed(2)}</td>`;tb.appendChild(tr)}
+  drawSimChart(p);
+}
 
-  <script src="app.js"></script>
+function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function svgEl(tag,a={}){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(a))e.setAttribute(k,v);return e}
+function axes(svg,{xmin,xmax,ymin,ymax,xlabel,ylabel,H=420,xticks=6,yticks=5}){
+  while(svg.firstChild)svg.removeChild(svg.firstChild);const W=760,m={l:58,r:18,t:18,b:50},sx=x=>m.l+(x-xmin)/(xmax-xmin)*(W-m.l-m.r),sy=y=>H-m.b-(y-ymin)/(ymax-ymin)*(H-m.t-m.b),border=cssVar('--border'),muted=cssVar('--muted'),text=cssVar('--text');
+  svg.appendChild(svgEl('line',{x1:m.l,y1:H-m.b,x2:W-m.r,y2:H-m.b,stroke:border}));svg.appendChild(svgEl('line',{x1:m.l,y1:H-m.b,x2:m.l,y2:m.t,stroke:border}));
+  for(let i=0;i<=yticks;i++){const y=ymin+(ymax-ymin)*i/yticks,py=sy(y);svg.appendChild(svgEl('line',{x1:m.l,y1:py,x2:W-m.r,y2:py,stroke:border,'stroke-opacity':.5}));const t=svgEl('text',{x:m.l-8,y:py+4,'text-anchor':'end',fill:muted,'font-size':12});t.textContent=y.toFixed(ymax-ymin<10?1:0);svg.appendChild(t)}
+  for(let i=0;i<=xticks;i++){const x=xmin+(xmax-xmin)*i/xticks,t=svgEl('text',{x:sx(x),y:H-m.b+22,'text-anchor':'middle',fill:muted,'font-size':12});t.textContent=Math.round(x);svg.appendChild(t)}
+  const tx=svgEl('text',{x:(m.l+W-m.r)/2,y:H-8,'text-anchor':'middle',fill:text,'font-size':13});tx.textContent=xlabel;svg.appendChild(tx);const ty=svgEl('text',{x:16,y:(m.t+H-m.b)/2,transform:`rotate(-90 16 ${(m.t+H-m.b)/2})`,'text-anchor':'middle',fill:text,'font-size':13});ty.textContent=ylabel;svg.appendChild(ty);return{sx,sy};
+}
+function pathPts(a,sx,sy){return a.map((p,i)=>(i?'L':'M')+sx(p.x).toFixed(2)+','+sy(p.y).toFixed(2)).join(' ')}
+function drawSimChart(p){
+  const svg=$('simChart'),xs=simData.flatMap(d=>[d.xTarget,d.xObs]),xmin=Math.min(...xs)-5,xmax=Math.max(...xs)+5,ys=simData.flatMap(d=>[d.yTrue,d.yObs]),ymin=Math.max(65,Math.floor((Math.min(...ys)-3)/2)*2),{sx,sy}=axes(svg,{xmin,xmax,ymin,ymax:100.5,xlabel:'PETO₂ (mmHg)',ylabel:'SpO₂ (%)'});
+  const grid=linspace(xmin,xmax,180),tru=grid.map(x=>({x,y:lung(x,p.fa,p.sh,p.VA,p.Q,p.VO2,p.hb).spo2})),fit=grid.map(x=>({x,y:lung(x,simFit.fa,simFit.sh,p.VA,p.Q,p.VO2,p.hb).spo2}));
+  svg.appendChild(svgEl('path',{d:pathPts(tru,sx,sy),fill:'none',stroke:cssVar('--accent'),'stroke-width':3}));svg.appendChild(svgEl('path',{d:pathPts(fit,sx,sy),fill:'none',stroke:cssVar('--accent2'),'stroke-width':3,'stroke-dasharray':'8 6'}));for(const d of simData)svg.appendChild(svgEl('circle',{cx:sx(d.xObs),cy:sy(d.yObs),r:5.5,fill:cssVar('--text'),stroke:cssVar('--surface'),'stroke-width':2}));
+}
+
+function finite(fn,x,h){return(fn(x+h)-fn(x-h))/(2*h)}
+function derivs(x,fa,sh,c){
+  const base=lung(x,fa,sh,c.VA,c.Q,c.VO2,c.hb).spo2;
+  return{dFa:finite(v=>lung(x,v,sh,c.VA,c.Q,c.VO2,c.hb).spo2,fa,.0025),dSh:finite(v=>lung(x,fa,v,c.VA,c.Q,c.VO2,c.hb).spo2,sh,.0005),dX:finite(v=>lung(v,fa,sh,c.VA,c.Q,c.VO2,c.hb).spo2,x,.1),base};
+}
+function onpDerivs(fa,sh,c){
+  return{dFa:finite(v=>lung(100,v,sh,c.VA,c.Q,c.VO2,c.hb).onp,fa,.0025),dSh:finite(v=>lung(100,fa,v,c.VA,c.Q,c.VO2,c.hb).onp,sh,.0005)};
+}
+function inv(A){
+  const n=A.length,M=A.map((r,i)=>[...r,...Array.from({length:n},(_,j)=>i===j?1:0)]);
+  for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;if(Math.abs(M[p][c])<1e-12||!Number.isFinite(M[p][c]))return null;[M[c],M[p]]=[M[p],M[c]];const d=M[c][c];for(let j=0;j<2*n;j++)M[c][j]/=d;for(let r=0;r<n;r++)if(r!==c){const f=M[r][c];for(let j=0;j<2*n;j++)M[r][j]-=f*M[c][j]}}
+  return M.map(r=>r.slice(n));
+}
+function fisher(schedule,fa,sh,err,c){
+  const useBias=err.biasSd>0,n=useBias?3:2,I=Array.from({length:n},()=>Array(n).fill(0));
+  for(const x of schedule){const d=derivs(x,fa,sh,c),varY=err.spo2Sd**2+err.modelSd**2+(d.dX*err.peto2Sd)**2,w=1/Math.max(varY,1e-8),g=useBias?[d.dFa,d.dSh,1]:[d.dFa,d.dSh];for(let i=0;i<n;i++)for(let j=0;j<n;j++)I[i][j]+=w*g[i]*g[j]}
+  if(useBias)I[2][2]+=1/Math.max(err.biasSd**2,1e-8);I[0][0]+=1e-10;I[1][1]+=1e-10;const cov=inv(I);if(!cov)return null;
+  const od=onpDerivs(fa,sh,c),vOnp=od.dFa*od.dFa*cov[0][0]+2*od.dFa*od.dSh*cov[0][1]+od.dSh*od.dSh*cov[1][1],seOnp=Math.sqrt(Math.max(0,vOnp)),seSh=100*Math.sqrt(Math.max(0,cov[1][1])),den=Math.sqrt(Math.max(1e-30,cov[0][0]*cov[1][1])),corr=cov[0][1]/den;
+  return{seOnp,seSh,corr};
+}
+function optContext(){return{VA:+$('optVa').value,Q:+$('optQ').value,VO2:+$('optVo2').value,hb:+$('optHb').value}}
+function scenarios(){
+  const out=[];for(const fa of rangeInclusive(+$('optFaMin').value,+$('optFaMax').value,Math.max(.005,+$('optFaStep').value)))for(const sh of rangeInclusive(+$('optShuntMin').value/100,+$('optShuntMax').value/100,Math.max(.005,+$('optShuntStep').value/100)))out.push({fa,sh});return out;
+}
+function errors(){
+  const lo=Math.max(.05,+$('optSpo2Min').value),hi=Math.max(lo,+$('optSpo2Max').value),st=Math.max(.05,+$('optSpo2Step').value),common={modelSd:+$('optModelNoise').value,peto2Sd:+$('optPeto2Noise').value,biasSd:+$('optBiasSd').value,minSpo2:+$('optMinSpo2').value};
+  return rangeInclusive(lo,hi,st).map(spo2Sd=>({spo2Sd,...common}));
+}
+function evalDesign(schedule,scs,errs,priority,c,partial=false){
+  let safety=0;for(const sc of scs)for(const x of schedule){const y=lung(x,sc.fa,sc.sh,c.VA,c.Q,c.VO2,c.hb).spo2;if(y<errs[0].minSpo2)safety=Math.max(safety,errs[0].minSpo2-y)}
+  const vals=[];for(const sc of scs)for(const e of errs){const f=fisher(schedule,sc.fa,sc.sh,e,c);vals.push(f||{seOnp:1e6,seSh:1e6,corr:1})}
+  const os=vals.map(v=>v.seOnp),ss=vals.map(v=>v.seSh),cs=vals.map(v=>Math.abs(v.corr)),medO=median(os),worstO=Math.max(...os),medS=median(ss),medC=median(cs);
+  let score=priority==='balanced'?Math.log1p(medO/3)+Math.log1p(medS/1.5)+.3*medC+.15*Math.log1p(worstO/5):priority==='minimax'?Math.log1p(worstO/4)+.35*Math.log1p(Math.max(...ss)/2)+.25*medC:Math.log1p(medO/2.5)+.35*Math.log1p(worstO/5)+.18*Math.log1p(medS/2)+.25*medC;
+  if(partial&&schedule.length<2){let a=0;for(const x of schedule)for(const sc of scs){const d=derivs(x,sc.fa,sc.sh,c),o=onpDerivs(sc.fa,sc.sh,c);a+=Math.abs(d.dFa*o.dFa)+Math.abs(d.dSh*o.dSh)/100}score=-a/Math.max(1,scs.length)}
+  if(safety>0)score+=1e4+100*safety;return{score,medianOnpSe:medO,worstOnpSe:worstO,medianShuntSe:medS,medianAbsCorr:medC,safety};
+}
+function greedy(lo,hi,n,scs,errs,step,priority,c){
+  const cand=rangeInclusive(lo,hi,step),sel=[],gap=Math.max(2,step*.7);
+  for(let k=0;k<n;k++){let bx=null,bs=Infinity;for(const x of cand){if(sel.some(v=>Math.abs(v-x)<gap))continue;const s=[...sel,x].sort((a,b)=>a-b),e=evalDesign(s,scs,errs,priority,c,true);if(e.score<bs){bs=e.score;bx=x}}if(bx===null)break;sel.push(bx);sel.sort((a,b)=>a-b)}
+  return sel;
+}
+let optResults=[],optMeta=null;
+async function runOptimizer(){
+  const scs=scenarios(),errs=errors(),c=optContext(),family=$('optFamily').value,priority=$('optPriority').value,n0=Math.round(+$('optNMin').value),n1=Math.round(+$('optNMax').value),step=Math.max(2,+$('optPetStep').value),lows=rangeInclusive(+$('optLowMin').value,+$('optLowMax').value,Math.max(1,+$('optLowStep').value)),highs=rangeInclusive(+$('optHighMin').value,+$('optHighMax').value,Math.max(1,+$('optHighStep').value)),status=$('optimizerStatus');
+  optResults=[];$('runOptimizer').disabled=true;await new Promise(r=>setTimeout(r,10));
+  if(family==='information'){
+    const lo=Math.min(...lows),hi=Math.max(...highs);for(let n=n0;n<=n1;n++){status.textContent=`Optimizing N=${n} across ${scs.length} physiology × ${errs.length} error states…`;const sch=greedy(lo,hi,n,scs,errs,step,priority,c),ev=evalDesign(sch,scs,errs,priority,c);optResults.push({n,low:Math.min(...sch),high:Math.max(...sch),schedule:sch,...ev});await new Promise(r=>setTimeout(r,0))}
+  }else{
+    const combos=[];for(let n=n0;n<=n1;n++)for(const lo of lows)for(const hi of highs)if(hi-lo>=25)combos.push({n,lo,hi});let k=0;
+    for(const q of combos){const sch=family==='shoulder'?scheduleShoulder(q.lo,q.hi,q.n):scheduleEqual(q.lo,q.hi,q.n),ev=evalDesign(sch,scs,errs,priority,c);optResults.push({n:q.n,low:q.lo,high:q.hi,schedule:sch,...ev});if(++k%20===0){status.textContent=`Evaluated ${k}/${combos.length} candidate envelopes…`;await new Promise(r=>setTimeout(r,0))}}
+  }
+  optResults.sort((a,b)=>a.score-b.score);optMeta={scs,errs,c,priority};status.textContent=`Done. Ranked ${optResults.length} candidate protocols.`;$('runOptimizer').disabled=false;$('exportOptCsv').disabled=false;$('runMonteCarlo').disabled=false;$('runAdequacy').disabled=false;renderOpt();runAdequacyAnalysis();
+}
+function renderOpt(){
+  const b=optResults[0];if(!b)return;$('bestN').textContent=b.n;$('bestSchedule').textContent=b.schedule.map(x=>x.toFixed(0)).join(', ')+' mmHg';$('bestOnpSe').textContent=b.medianOnpSe.toFixed(2)+' mmHg';$('bestWorstOnpSe').textContent=b.worstOnpSe.toFixed(2)+' mmHg';$('bestShuntSe').textContent=b.medianShuntSe.toFixed(2)+'%';
+  $('bestMessage').innerHTML=`<b>Selected schedule:</b> ${b.schedule.map(x=>x.toFixed(0)).join(', ')} mmHg. The Fisher model estimates uncertainty in fA2 and shunt, then propagates that covariance to <b>derived ONP at PETO₂ 100</b>. Median |fA2–shunt correlation| is ${b.medianAbsCorr.toFixed(2)}.`;
+  const tb=$('optTable');tb.innerHTML='';optResults.slice(0,12).forEach((r,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td><td>${r.n}</td><td>${r.schedule.map(x=>x.toFixed(0)).join(', ')}</td><td>${r.medianOnpSe.toFixed(2)}</td><td>${r.worstOnpSe.toFixed(2)}</td><td>${r.medianShuntSe.toFixed(2)}%</td><td>${r.medianAbsCorr.toFixed(2)}</td><td>${r.score.toFixed(3)}</td>`;tb.appendChild(tr)});drawN();
+}
+function drawN(){
+  const svg=$('nChart'),by=new Map();for(const r of optResults)if(!by.has(r.n)||r.score<by.get(r.n).score)by.set(r.n,r);const a=[...by.values()].sort((x,y)=>x.n-y.n),xmin=Math.min(...a.map(r=>r.n))-.2,xmax=Math.max(...a.map(r=>r.n))+.2,ymax=Math.max(...a.flatMap(r=>[r.medianOnpSe,r.worstOnpSe]))*1.15,{sx,sy}=axes(svg,{xmin,xmax,ymin:0,ymax,xlabel:'Number of PETO₂ levels',ylabel:'ONP SE (mmHg)',H:360,xticks:Math.max(1,a.length-1)});
+  const m=a.map(r=>({x:r.n,y:r.medianOnpSe})),w=a.map(r=>({x:r.n,y:r.worstOnpSe}));svg.appendChild(svgEl('path',{d:pathPts(m,sx,sy),fill:'none',stroke:cssVar('--accent'),'stroke-width':3}));svg.appendChild(svgEl('path',{d:pathPts(w,sx,sy),fill:'none',stroke:cssVar('--accent2'),'stroke-width':3,'stroke-dasharray':'7 5'}));for(const p of m)svg.appendChild(svgEl('circle',{cx:sx(p.x),cy:sy(p.y),r:4.5,fill:cssVar('--accent')}));
+}
+
+let adequacyResult=null;
+
+function quantile(a,p){
+  if(!a.length)return NaN;
+  const b=[...a].sort((x,y)=>x-y),k=(b.length-1)*p,f=Math.floor(k),c=Math.ceil(k);
+  return f===c?b[f]:b[f]*(c-k)+b[c]*(k-f);
+}
+function bestDesignsByN(){
+  const by=new Map();
+  for(const r of optResults)if(!by.has(r.n)||r.score<by.get(r.n).score)by.set(r.n,r);
+  return [...by.values()].sort((a,b)=>a.n-b.n);
+}
+function fisherStateArrays(design,scs,errs,c){
+  const onp=[],sh=[];
+  for(const sc of scs)for(const e of errs){
+    const f=fisher(design.schedule,sc.fa,sc.sh,e,c);
+    onp.push(f&&Number.isFinite(f.seOnp)?f.seOnp:1e6);
+    sh.push(f&&Number.isFinite(f.seSh)?f.seSh:1e6);
+  }
+  return{onp,sh};
+}
+function pairedBootstrapMedianLoss(a,b,B,rng){
+  const n=a.length,out=[];
+  for(let k=0;k<B;k++){
+    const ia=[],ib=[];
+    for(let j=0;j<n;j++){const q=Math.floor(rng()*n);ia.push(a[q]);ib.push(b[q])}
+    out.push(median(ia)-median(ib));
+  }
+  return{lo:quantile(out,.025),hi:quantile(out,.975),samples:out};
+}
+function runAdequacyAnalysis(){
+  if(!optResults.length||!optMeta)return;
+  const status=$('adequacyStatus'),designs=bestDesignsByN(),ref=designs[designs.length-1],tolO=Math.max(0,+$('adequateOnpTol').value),tolS=Math.max(0,+$('adequateShuntTol').value),B=Math.max(100,Math.round(+$('adequateBoot').value)),rng=mulberry32(0x6AC1D00D),refArr=fisherStateArrays(ref,optMeta.scs,optMeta.errs,optMeta.c);
+  status.textContent=`Bootstrapping paired precision losses for ${designs.length} optimized N values…`;
+  const rows=designs.map(d=>{
+    const arr=fisherStateArrays(d,optMeta.scs,optMeta.errs,optMeta.c),oLoss=median(arr.onp)-median(refArr.onp),sLoss=median(arr.sh)-median(refArr.sh),oCI=pairedBootstrapMedianLoss(arr.onp,refArr.onp,B,rng),sCI=pairedBootstrapMedianLoss(arr.sh,refArr.sh,B,rng),detect=oCI.lo>0,adequate=oCI.hi<=tolO&&sCI.hi<=tolS&&d.safety<=0;
+    return{design:d,arr,oLoss,sLoss,oCI,sCI,detect,adequate};
+  });
+  const recommended=rows.find(r=>r.adequate)||rows[rows.length-1];
+  adequacyResult={rows,recommended,ref,tolO,tolS};
+  $('adequateN').textContent=recommended.design.n;$('adequateRefN').textContent=ref.n;$('adequateOnpUcl').textContent=recommended.oCI.hi.toFixed(2)+' mmHg';$('adequateShuntUcl').textContent=recommended.sCI.hi.toFixed(2)+' pts';
+  $('adequacyMetrics').classList.remove('hidden');$('adequacyMessage').classList.remove('hidden');$('runAdequacyMc').disabled=false;
+  const extra=ref.n-recommended.design.n;
+  $('adequacyMessage').innerHTML=`<b>Recommended N = ${recommended.design.n}.</b> This saves ${extra} PETO₂ steady state${extra===1?'':'s'} versus the N=${ref.n} reference. The upper 95% bound for loss in ONP precision is <b>${recommended.oCI.hi.toFixed(2)} mmHg</b> (tolerance ${tolO.toFixed(2)}), and for shunt precision is <b>${recommended.sCI.hi.toFixed(2)} points</b> (tolerance ${tolS.toFixed(2)}). ${recommended.detect?'The loss is statistically detectable across the design-space bootstrap, but it remains within the prespecified meaningful-loss boundary.':'The bootstrap does not show a clearly detectable loss versus the reference.'}`;
+  const tb=$('adequacyTable');tb.innerHTML='';
+  for(const r of rows){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.design.n}</td><td>${r.design.schedule.map(x=>x.toFixed(0)).join(', ')}</td><td>${median(r.arr.onp).toFixed(2)}</td><td>${r.oLoss>=0?'+':''}${r.oLoss.toFixed(2)} [${r.oCI.lo.toFixed(2)}, ${r.oCI.hi.toFixed(2)}]</td><td>${r.sLoss>=0?'+':''}${r.sLoss.toFixed(2)} [${r.sCI.lo.toFixed(2)}, ${r.sCI.hi.toFixed(2)}]</td><td>${r.detect?'Yes':'No'}</td><td>${r.adequate?'<b>Yes</b>':'No'}</td>`;
+    tb.appendChild(tr);
+  }
+  drawAdequacyChart(rows,ref,tolO,recommended.design.n);
+  status.textContent=`Done. Smallest adequate design: N=${recommended.design.n}.`;
+}
+function drawAdequacyChart(rows,ref,tol,recommendedN){
+  const svg=$('adequacyChart'),xs=rows.map(r=>r.design.n),vals=rows.map(r=>median(r.arr.onp)),refMed=median(rows[rows.length-1].arr.onp),boundary=refMed+tol,xmin=Math.min(...xs)-.2,xmax=Math.max(...xs)+.2,ymax=Math.max(boundary,...vals)*1.18,{sx,sy}=axes(svg,{xmin,xmax,ymin:0,ymax,xlabel:'Number of PETO₂ levels',ylabel:'Median ONP SE (mmHg)',H:350,xticks:Math.max(1,rows.length-1)});
+  const pts=rows.map((r,i)=>({x:r.design.n,y:vals[i]}));
+  svg.appendChild(svgEl('path',{d:pathPts(pts,sx,sy),fill:'none',stroke:cssVar('--accent'),'stroke-width':3}));
+  svg.appendChild(svgEl('line',{x1:sx(xmin),y1:sy(boundary),x2:sx(xmax),y2:sy(boundary),stroke:cssVar('--accent2'),'stroke-width':2,'stroke-dasharray':'8 6'}));
+  for(const q of pts)svg.appendChild(svgEl('circle',{cx:sx(q.x),cy:sy(q.y),r:q.x===recommendedN?6:4.5,fill:q.x===recommendedN?cssVar('--accent2'):cssVar('--accent'),stroke:cssVar('--surface'),'stroke-width':1.5}));
+}
+function bootstrapRmseLoss(recSq,refSq,B,rng){
+  const n=recSq.length,out=[];
+  for(let b=0;b<B;b++){
+    let ar=0,af=0;
+    for(let j=0;j<n;j++){const i=Math.floor(rng()*n);ar+=recSq[i];af+=refSq[i]}
+    out.push(Math.sqrt(ar/n)-Math.sqrt(af/n));
+  }
+  return{lo:quantile(out,.025),hi:quantile(out,.975)};
+}
+async function runAdequacyMonteCarlo(){
+  if(!adequacyResult||!optMeta)return;
+  const rec=adequacyResult.recommended.design,ref=adequacyResult.ref,scs=optMeta.scs,errs=optMeta.errs,c=optMeta.c,reps=Math.max(1,Math.round(+$('adequacyMcReps').value)),boundaryTol=Math.max(0,+$('adequateBoundaryTol').value),status=$('adequacyMcStatus'),rng=mulberry32(0x44B00B1E),maxPts=Math.max(rec.schedule.length,ref.schedule.length),recOnpSq=[],refOnpSq=[],recShSq=[],refShSq=[];let recBound=0,refBound=0,total=0;
+  $('runAdequacyMc').disabled=true;$('adequacyMcMetrics').classList.add('hidden');$('adequacyMcMessage').classList.add('hidden');
+  const states=scs.length*errs.length*reps;
+  status.textContent=`Running paired nonlinear fits: N=${rec.n} versus N=${ref.n} across ${states} paired state-replicates…`;
+  function makeData(schedule,sc,e,bias,zx,zy,zm){
+    return schedule.map((x,i)=>{const yt=lung(x,sc.fa,sc.sh,c.VA,c.Q,c.VO2,c.hb).spo2;return{xObs:x+e.peto2Sd*zx[i],yObs:clamp(yt+bias+e.spo2Sd*zy[i]+e.modelSd*zm[i],60,100)}});
+  }
+  for(const sc of scs)for(const e of errs)for(let r=0;r<reps;r++){
+    const bias=e.biasSd*randn(rng),zx=Array.from({length:maxPts},()=>randn(rng)),zy=Array.from({length:maxPts},()=>randn(rng)),zm=Array.from({length:maxPts},()=>randn(rng));
+    const fitRec=fitFaSh(makeData(rec.schedule,sc,e,bias,zx,zy,zm),c),fitRef=fitFaSh(makeData(ref.schedule,sc,e,bias,zx,zy,zm),c),trueOnp=lung(100,sc.fa,sc.sh,c.VA,c.Q,c.VO2,c.hb).onp,onpRec=lung(100,fitRec.fa,fitRec.sh,c.VA,c.Q,c.VO2,c.hb).onp,onpRef=lung(100,fitRef.fa,fitRef.sh,c.VA,c.Q,c.VO2,c.hb).onp,erO=onpRec-trueOnp,efO=onpRef-trueOnp,erS=100*(fitRec.sh-sc.sh),efS=100*(fitRef.sh-sc.sh);
+    recOnpSq.push(erO*erO);refOnpSq.push(efO*efO);recShSq.push(erS*erS);refShSq.push(efS*efS);
+    if(fitRec.fa<=.405||fitRec.fa>=.895||fitRec.sh<=.0026||fitRec.sh>=.297)recBound++;
+    if(fitRef.fa<=.405||fitRef.fa>=.895||fitRef.sh<=.0026||fitRef.sh>=.297)refBound++;
+    total++;
+    if(total%20===0){status.textContent=`Completed ${total}/${states} paired state-replicates…`;await new Promise(q=>setTimeout(q,0))}
+  }
+  const rmRecO=Math.sqrt(mean(recOnpSq)),rmRefO=Math.sqrt(mean(refOnpSq)),rmRecS=Math.sqrt(mean(recShSq)),rmRefS=Math.sqrt(mean(refShSq)),lossO=rmRecO-rmRefO,lossS=rmRecS-rmRefS,bootRng=mulberry32(0xADEFACED),oCI=bootstrapRmseLoss(recOnpSq,refOnpSq,400,bootRng),sCI=bootstrapRmseLoss(recShSq,refShSq,400,bootRng),boundDiff=100*(recBound-refBound)/Math.max(1,total),pass=oCI.hi<=adequacyResult.tolO&&sCI.hi<=adequacyResult.tolS&&boundDiff<=boundaryTol,detect=oCI.lo>0;
+  $('adequacyMcOnp').textContent=(lossO>=0?'+':'')+lossO.toFixed(2)+' mmHg';$('adequacyMcOnpCi').textContent=`95% CI ${oCI.lo.toFixed(2)} to ${oCI.hi.toFixed(2)}`;
+  $('adequacyMcSh').textContent=(lossS>=0?'+':'')+lossS.toFixed(2)+' pts';$('adequacyMcShCi').textContent=`95% CI ${sCI.lo.toFixed(2)} to ${sCI.hi.toFixed(2)}`;
+  $('adequacyMcBoundary').textContent=(boundDiff>=0?'+':'')+boundDiff.toFixed(1)+'%';$('adequacyMcPass').textContent=pass?'PASS':'FAIL';
+  $('adequacyMcMetrics').classList.remove('hidden');$('adequacyMcMessage').classList.remove('hidden');
+  $('adequacyMcMessage').innerHTML=`N=${rec.n} versus N=${ref.n}: the nonlinear paired Monte Carlo ${pass?'<b>supports non-inferiority</b>':'<b>does not meet the selected non-inferiority limits</b>'}. ${detect?'The ONP RMSE loss is statistically detectable (95% CI excludes 0), but statistical detectability is interpreted separately from whether the loss exceeds the ${adequacyResult.tolO.toFixed(2)} mmHg meaningful-loss threshold.':'The ONP RMSE difference is not clearly detectable at the 95% level.'}`;
+  status.textContent=`Completed ${total} paired nonlinear comparisons.`;$('runAdequacyMc').disabled=false;
+}
+
+async function monteCarlo(){
+  if(!optResults.length)return;const b=optResults[0],{scs,errs,c}=optMeta,reps=Math.round(+$('mcReps').value),status=$('mcStatus'),r=mulberry32((seed+0x12345)>>>0),oErr=[],sErr=[];let tot=scs.length*errs.length*reps,k=0,bound=0;$('runMonteCarlo').disabled=true;$('mcMetrics').classList.add('hidden');
+  for(const sc of scs)for(const e of errs)for(let j=0;j<reps;j++){const bias=e.biasSd*randn(r),data=b.schedule.map(x=>{const y=lung(x,sc.fa,sc.sh,c.VA,c.Q,c.VO2,c.hb).spo2;return{xObs:x+e.peto2Sd*randn(r),yObs:clamp(y+bias+e.spo2Sd*randn(r)+e.modelSd*randn(r),60,100)}}),fp={VA:c.VA,Q:c.Q,VO2:c.VO2,hb:c.hb},fit=fitFaSh(data.map(d=>({xObs:d.xObs,yObs:d.yObs})),fp),ot=lung(100,sc.fa,sc.sh,c.VA,c.Q,c.VO2,c.hb).onp,of=lung(100,fit.fa,fit.sh,c.VA,c.Q,c.VO2,c.hb).onp;oErr.push(of-ot);sErr.push(100*(fit.sh-sc.sh));if(fit.fa<=.405||fit.fa>=.895||fit.sh<=.0026||fit.sh>=.297)bound++;if(++k%40===0){status.textContent=`Simulated ${k}/${tot} fits…`;await new Promise(q=>setTimeout(q,0))}}
+  const rmO=Math.sqrt(mean(oErr.map(x=>x*x))),biO=mean(oErr),rmS=Math.sqrt(mean(sErr.map(x=>x*x)));$('mcOnpRmse').textContent=rmO.toFixed(2);$('mcOnpBias').textContent=(biO>=0?'+':'')+biO.toFixed(2);$('mcShuntRmse').textContent=rmS.toFixed(2);$('mcFailure').textContent=(100*bound/tot).toFixed(1)+'%';$('mcMetrics').classList.remove('hidden');status.textContent=`Completed ${tot} noisy fits.`;$('runMonteCarlo').disabled=false;
+}
+
+function downloadText(name,text){const blob=new Blob([text],{type:'text/csv'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u)}
+function exportSim(){if(!simData.length)return;const p=simParams(),rows=['peto2_target,peto2_measured,spo2_true,spo2_observed,spo2_fitted,residual'];for(const d of simData){const y=lung(d.xObs,simFit.fa,simFit.sh,p.VA,p.Q,p.VO2,p.hb).spo2;rows.push([d.xTarget,d.xObs,d.yTrue,d.yObs,y,d.yObs-y].map(v=>Number(v).toFixed(5)).join(','))}downloadText('alpe_two_compartment_simulation.csv',rows.join('\n'))}
+function exportOpt(){if(!optResults.length)return;const rows=['rank,n,low_peto2,high_peto2,schedule,median_onp_se,worst_onp_se,median_shunt_se_pct,median_abs_corr,score'];optResults.forEach((r,i)=>rows.push([i+1,r.n,r.low,r.high,'"'+r.schedule.map(x=>x.toFixed(1)).join(';')+'"',r.medianOnpSe,r.worstOnpSe,r.medianShuntSe,r.medianAbsCorr,r.score].join(',')));downloadText('alpe_two_compartment_protocol_ranking.csv',rows.join('\n'))}
+
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===btn));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));$('tab-'+btn.dataset.tab).classList.add('active')}));
+['trueFa','trueShunt','spo2Noise','spo2Bias','peto2Noise','modelNoise'].forEach(id=>$(id).addEventListener('input',updateOutputs));
+['trueFa','trueShunt','spo2Noise','spo2Bias','peto2Noise','modelNoise','simLow','simHigh','simN','simSpacing','simVa','simQ','simVo2','simHb'].forEach(id=>$(id).addEventListener('change',()=>{seed=(seed+1337)>>>0;generateSim()}));
+$('regenerateNoise').addEventListener('click',()=>{seed=(seed+7919)>>>0;generateSim()});
+$('randomizeSubject').addEventListener('click',()=>{const r=mulberry32((seed+=123457)>>>0);$('trueFa').value=(.45+.43*r()).toFixed(2);$('trueShunt').value=Math.round(r()*18);updateOutputs();generateSim()});
+$('exportSimCsv').addEventListener('click',exportSim);$('runOptimizer').addEventListener('click',runOptimizer);$('exportOptCsv').addEventListener('click',exportOpt);$('runAdequacy').addEventListener('click',runAdequacyAnalysis);$('runAdequacyMc').addEventListener('click',runAdequacyMonteCarlo);$('runMonteCarlo').addEventListener('click',monteCarlo);
+updateOutputs();generateSim();
+</script>
 </body>
 </html>
