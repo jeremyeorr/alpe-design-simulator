@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Interactive ALPE-inspired pulmonary oxygen exchange simulator and PETO2 protocol optimizer." />
+  <title>ALPE Design Simulator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div>
+        <p class="eyebrow">Pulmonary gas exchange modeling</p>
+        <h1>ALPE Design Simulator</h1>
+        <p class="subtitle">Explore ONP / V̇/Q̇ mismatch, shunt, measurement error, parameter recovery, and PETO₂ sampling design.</p>
+      </div>
+      <div class="model-badge" title="This version uses a reduced ONP + shunt oxygen-content model.">
+        Reduced ALPE model · v0.1
+      </div>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <nav class="tabs" aria-label="Simulator sections">
+      <button class="tab active" data-tab="simulate" type="button">Simulator</button>
+      <button class="tab" data-tab="optimize" type="button">Optimize protocol</button>
+      <button class="tab" data-tab="sensitivity" type="button">Sensitivity</button>
+      <button class="tab" data-tab="methods" type="button">Methods</button>
+    </nav>
+
+    <section id="tab-simulate" class="tab-panel active">
+      <div class="two-col">
+        <section class="panel controls-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Simulated physiology</h2>
+              <p>Set the true physiology and acquisition error, then refit ONP and shunt.</p>
+            </div>
+            <button id="randomizeSubject" class="button secondary" type="button">Random subject</button>
+          </div>
+
+          <div class="control-grid">
+            <label class="control">
+              <span><b>True ONP</b><output id="trueOnpOut"></output></span>
+              <input id="trueOnp" type="range" min="0" max="50" step="1" value="15" />
+              <small>Effective alveolar-to-end-capillary O₂ pressure loss from low V̇/Q̇.</small>
+            </label>
+
+            <label class="control">
+              <span><b>True shunt</b><output id="trueShuntOut"></output></span>
+              <input id="trueShunt" type="range" min="0" max="25" step="1" value="5" />
+              <small>Fraction of cardiac output bypassing ventilated gas exchange units.</small>
+            </label>
+
+            <label class="control">
+              <span><b>SpO₂ random error SD</b><output id="spo2NoiseOut"></output></span>
+              <input id="spo2Noise" type="range" min="0" max="2" step="0.1" value="0.4" />
+              <small>Independent point-to-point pulse-ox / physiologic variability.</small>
+            </label>
+
+            <label class="control">
+              <span><b>SpO₂ systematic bias</b><output id="spo2BiasOut"></output></span>
+              <input id="spo2Bias" type="range" min="-2" max="2" step="0.1" value="0" />
+              <small>Constant offset across all measurements for this simulated subject.</small>
+            </label>
+
+            <label class="control">
+              <span><b>PETO₂ measurement SD</b><output id="peto2NoiseOut"></output></span>
+              <input id="peto2Noise" type="range" min="0" max="3" step="0.25" value="0.5" />
+              <small>Error in the measured oxygen-axis value.</small>
+            </label>
+
+            <label class="control">
+              <span><b>Model / steady-state error SD</b><output id="modelNoiseOut"></output></span>
+              <input id="modelNoise" type="range" min="0" max="2" step="0.1" value="0.3" />
+              <small>Residual physiology not captured by the reduced model.</small>
+            </label>
+          </div>
+
+          <hr />
+          <h3>PETO₂ schedule</h3>
+          <div class="compact-grid">
+            <label class="field">Low PETO₂
+              <input id="simLow" type="number" min="45" max="100" step="1" value="55" />
+            </label>
+            <label class="field">High PETO₂
+              <input id="simHigh" type="number" min="80" max="220" step="5" value="150" />
+            </label>
+            <label class="field">Number of points
+              <input id="simN" type="number" min="3" max="10" step="1" value="6" />
+            </label>
+            <label class="field">Spacing
+              <select id="simSpacing">
+                <option value="equal">Equal PETO₂</option>
+                <option value="shoulder">Shoulder + high anchor</option>
+                <option value="information">Information-weighted</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="button-row">
+            <button id="regenerateNoise" class="button primary" type="button">New noisy measurements</button>
+            <button id="exportSimCsv" class="button secondary" type="button">Export CSV</button>
+          </div>
+        </section>
+
+        <section class="panel results-panel">
+          <h2>Parameter recovery</h2>
+          <div class="metrics four">
+            <article class="metric"><span>Fitted ONP</span><strong id="fitOnp">—</strong><small id="fitOnpDelta"></small></article>
+            <article class="metric"><span>Fitted shunt</span><strong id="fitShunt">—</strong><small id="fitShuntDelta"></small></article>
+            <article class="metric"><span>Fit RMSE</span><strong id="fitRmse">—</strong><small>SpO₂ percentage points</small></article>
+            <article class="metric"><span>Reduced χ²</span><strong id="fitChi">—</strong><small>relative to random + model SD</small></article>
+          </div>
+          <div id="fitMessage" class="callout"></div>
+
+          <figure class="chart-wrap">
+            <div class="chart-header">
+              <figcaption>PETO₂ → SpO₂ response</figcaption>
+              <div class="legend"><span class="key true"></span>True <span class="key fitted"></span>Fitted <span class="key observed"></span>Observed</div>
+            </div>
+            <svg id="simChart" viewBox="0 0 760 420" role="img" aria-label="PETO2 versus SpO2 simulator chart"></svg>
+          </figure>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>PETO₂ target</th><th>PETO₂ measured</th><th>True SpO₂</th><th>Observed</th><th>Fitted</th><th>Residual</th></tr></thead>
+              <tbody id="simTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-optimize" class="tab-panel">
+      <div class="two-col optimize-layout">
+        <section class="panel controls-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Design space</h2>
+              <p>Search candidate PETO₂ protocols using Fisher-information approximations across a physiology/error grid.</p>
+            </div>
+          </div>
+
+          <h3>Physiology to protect against</h3>
+          <div class="compact-grid three">
+            <label class="field">ONP min
+              <input id="optOnpMin" type="number" value="0" min="0" max="50" step="5" />
+            </label>
+            <label class="field">ONP max
+              <input id="optOnpMax" type="number" value="40" min="0" max="60" step="5" />
+            </label>
+            <label class="field">ONP step
+              <input id="optOnpStep" type="number" value="10" min="2" max="20" step="1" />
+            </label>
+            <label class="field">Shunt min (%)
+              <input id="optShuntMin" type="number" value="0" min="0" max="25" step="1" />
+            </label>
+            <label class="field">Shunt max (%)
+              <input id="optShuntMax" type="number" value="15" min="0" max="30" step="1" />
+            </label>
+            <label class="field">Shunt step (%)
+              <input id="optShuntStep" type="number" value="5" min="1" max="10" step="1" />
+            </label>
+          </div>
+
+          <h3>Error assumptions</h3>
+          <div class="compact-grid three">
+            <label class="field">SpO₂ SD min (%)
+              <input id="optSpo2Min" type="number" value="0.25" min="0.1" max="3" step="0.05" />
+            </label>
+            <label class="field">SpO₂ SD max (%)
+              <input id="optSpo2Max" type="number" value="1.0" min="0.1" max="3" step="0.1" />
+            </label>
+            <label class="field">SpO₂ SD step (%)
+              <input id="optSpo2Step" type="number" value="0.25" min="0.05" max="1" step="0.05" />
+            </label>
+            <label class="field">Model error SD (%)
+              <input id="optModelNoise" type="number" value="0.5" min="0" max="3" step="0.1" />
+            </label>
+            <label class="field">PETO₂ SD (mmHg)
+              <input id="optPeto2Noise" type="number" value="0.5" min="0" max="5" step="0.25" />
+            </label>
+            <label class="field">Subject bias prior SD (%)
+              <input id="optBiasSd" type="number" value="0.5" min="0" max="3" step="0.1" />
+            </label>
+            <label class="field">Minimum allowable SpO₂ (%)
+              <input id="optMinSpo2" type="number" value="90" min="85" max="95" step="1" />
+            </label>
+          </div>
+
+          <h3>Protocols to search</h3>
+          <div class="compact-grid three">
+            <label class="field">N min
+              <input id="optNMin" type="number" value="3" min="3" max="8" step="1" />
+            </label>
+            <label class="field">N max
+              <input id="optNMax" type="number" value="7" min="3" max="10" step="1" />
+            </label>
+            <label class="field">Candidate PETO₂ step
+              <input id="optPetStep" type="number" value="5" min="2" max="15" step="1" />
+            </label>
+            <label class="field">Low range min
+              <input id="optLowMin" type="number" value="60" min="45" max="140" step="5" />
+            </label>
+            <label class="field">Low range max
+              <input id="optLowMax" type="number" value="120" min="50" max="160" step="5" />
+            </label>
+            <label class="field">Low step
+              <input id="optLowStep" type="number" value="10" min="2" max="20" step="1" />
+            </label>
+            <label class="field">High range min
+              <input id="optHighMin" type="number" value="120" min="80" max="220" step="5" />
+            </label>
+            <label class="field">High range max
+              <input id="optHighMax" type="number" value="180" min="90" max="240" step="5" />
+            </label>
+            <label class="field">High step
+              <input id="optHighStep" type="number" value="10" min="5" max="25" step="5" />
+            </label>
+          </div>
+
+          <label class="field full">Schedule family
+            <select id="optFamily">
+              <option value="equal">Equal PETO₂ spacing</option>
+              <option value="shoulder">Shoulder-weighted + high anchor</option>
+              <option value="information" selected>Greedy information-weighted</option>
+            </select>
+          </label>
+
+          <label class="field full">Optimization priority
+            <select id="optPriority">
+              <option value="balanced">Balanced ONP + shunt</option>
+              <option value="onp" selected>Prioritize ONP</option>
+              <option value="minimax">Minimize worst-case uncertainty</option>
+            </select>
+          </label>
+
+          <div class="button-row">
+            <button id="runOptimizer" class="button primary" type="button">Find best protocols</button>
+            <button id="exportOptCsv" class="button secondary" type="button" disabled>Export ranked CSV</button>
+          </div>
+          <p id="optimizerStatus" class="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel results-panel">
+          <h2>Best candidate</h2>
+          <div class="metrics four">
+            <article class="metric"><span>Points</span><strong id="bestN">—</strong><small id="bestSchedule">Run optimizer</small></article>
+            <article class="metric"><span>Median ONP SE</span><strong id="bestOnpSe">—</strong><small>Fisher approximation</small></article>
+            <article class="metric"><span>Worst ONP SE</span><strong id="bestWorstOnpSe">—</strong><small>across physiology grid</small></article>
+            <article class="metric"><span>Median shunt SE</span><strong id="bestShuntSe">—</strong><small>percentage points</small></article>
+          </div>
+          <div id="bestMessage" class="callout muted">The optimizer will compare schedules across the requested ONP/shunt space. PETO₂ noise is propagated through the local curve slope, and systematic SpO₂ bias is treated as a nuisance parameter with a prior.</div>
+
+          <figure class="chart-wrap">
+            <div class="chart-header"><figcaption>Precision versus number of PETO₂ levels</figcaption><div class="legend"><span class="key true"></span>Median ONP SE <span class="key fitted"></span>Worst-case ONP SE</div></div>
+            <svg id="nChart" viewBox="0 0 760 360" role="img" aria-label="Protocol precision versus number of PETO2 levels"></svg>
+          </figure>
+
+          <h3>Top designs</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rank</th><th>N</th><th>PETO₂ schedule (mmHg)</th><th>Median ONP SE</th><th>Worst ONP SE</th><th>Median shunt SE</th><th>Median |corr|</th><th>Score</th></tr></thead>
+              <tbody id="optTable"><tr><td colspan="8" class="empty">Run the optimizer to rank protocols.</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="subpanel">
+            <div class="panel-heading">
+              <div><h3>Monte Carlo validation of winner</h3><p>Refit noisy synthetic datasets rather than relying only on local Fisher information.</p></div>
+              <label class="field short">Replicates/scenario
+                <input id="mcReps" type="number" value="30" min="5" max="200" step="5" />
+              </label>
+            </div>
+            <button id="runMonteCarlo" class="button secondary" type="button" disabled>Validate winning design</button>
+            <p id="mcStatus" class="status" aria-live="polite"></p>
+            <div id="mcMetrics" class="metrics four hidden">
+              <article class="metric"><span>ONP RMSE</span><strong id="mcOnpRmse">—</strong><small>mmHg</small></article>
+              <article class="metric"><span>ONP bias</span><strong id="mcOnpBias">—</strong><small>mmHg</small></article>
+              <article class="metric"><span>Shunt RMSE</span><strong id="mcShuntRmse">—</strong><small>percentage points</small></article>
+              <article class="metric"><span>Fit failure</span><strong id="mcFailure">—</strong><small>boundary / nonfinite fits</small></article>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-sensitivity" class="tab-panel">
+      <section class="panel">
+        <div class="panel-heading">
+          <div><h2>Where does each PETO₂ measurement contain information?</h2><p>Local derivatives show how strongly predicted SpO₂ changes with ONP and shunt.</p></div>
+          <div class="inline-controls">
+            <label class="field short">ONP <input id="sensOnp" type="number" value="15" min="0" max="50" step="1" /></label>
+            <label class="field short">Shunt (%) <input id="sensShunt" type="number" value="5" min="0" max="25" step="1" /></label>
+          </div>
+        </div>
+        <div class="metrics three">
+          <article class="metric"><span>Most ONP-sensitive PETO₂</span><strong id="sensBestOnp">—</strong><small>largest |∂SpO₂/∂ONP|</small></article>
+          <article class="metric"><span>Most shunt-sensitive PETO₂</span><strong id="sensBestShunt">—</strong><small>largest |∂SpO₂/∂shunt|</small></article>
+          <article class="metric"><span>Interpretation</span><strong class="small-strong">Shoulder vs plateau</strong><small>The optimal protocol usually needs both parameter directions.</small></article>
+        </div>
+        <figure class="chart-wrap">
+          <div class="chart-header"><figcaption>Normalized local sensitivity across PETO₂</figcaption><div class="legend"><span class="key true"></span>ONP <span class="key fitted"></span>Shunt</div></div>
+          <svg id="sensitivityChart" viewBox="0 0 760 390" role="img" aria-label="Normalized ALPE model sensitivities across PETO2"></svg>
+        </figure>
+        <div class="callout">A point is useful when moving one parameter changes SpO₂ substantially. A set of points is identifiable when ONP and shunt produce <em>different patterns</em> across the selected PETO₂ values, rather than merely having large slopes.</div>
+      </section>
+    </section>
+
+    <section id="tab-methods" class="tab-panel">
+      <section class="panel methods">
+        <h2>What this version calculates</h2>
+        <p>This is an <b>ALPE-inspired reduced model for teaching and experimental-design exploration</b>, not yet a validated reproduction of the proprietary/commercial ALPE implementation. The code deliberately isolates the physiology function so a full two-compartment mass-balance implementation can replace it later.</p>
+
+        <div class="equation-stack">
+          <article><h3>1. Represent low V̇/Q̇ by ONP</h3><div class="equation">P<sub>c′O₂</sub> = P<sub>ET O₂</sub> − ONP</div><p>ONP is treated as the effective pressure loss between mixed alveolar/end-expired oxygen and end-capillary blood before shunt mixing.</p></article>
+          <article><h3>2. Convert PO₂ to oxygen content</h3><div class="equation">C<sub>O₂</sub> = 1.34 · Hb · S<sub>O₂</sub> + 0.0031 · P<sub>O₂</sub></div><p>A Hill oxygen-dissociation curve is used in this prototype (P50 26.8 mmHg, n = 2.7).</p></article>
+          <article><h3>3. Mix shunted venous blood</h3><div class="equation">C<sub>aO₂</sub> = (1 − s)C<sub>c′O₂</sub> + sC<sub>vO₂</sub></div><p>Default Hb is 14 g/dL and mixed-venous saturation 75%; these are currently fixed constants in the source.</p></article>
+          <article><h3>4. Recover ONP and shunt</h3><div class="equation">θ̂ = arg min Σ [SpO₂<sub>obs</sub> − SpO₂<sub>model</sub>(P<sub>ETO₂</sub>, θ)]²</div><p>The simulator uses a coarse-to-fine grid search, making the fitting behavior transparent and robust for two parameters.</p></article>
+          <article><h3>5. Protocol optimization</h3><div class="equation">I(θ) ≈ JᵀWJ + I<sub>prior</sub></div><p>The Jacobian J contains local derivatives with respect to ONP, shunt, and (when enabled) a subject-level saturation bias. The inverse information matrix approximates parameter covariance. PETO₂ error is propagated into effective SpO₂ variance through the local dSpO₂/dPETO₂ slope.</p></article>
+        </div>
+
+        <h3>How to interpret the optimizer</h3>
+        <ul>
+          <li><b>Median ONP SE:</b> typical local uncertainty across the requested physiology grid.</li>
+          <li><b>Worst ONP SE:</b> protects against designs that work in normal lungs but fail at severe mismatch.</li>
+          <li><b>Median |corr|:</b> correlation between fitted ONP and shunt; values near 1 indicate poor parameter separation.</li>
+          <li><b>Monte Carlo RMSE:</b> end-to-end error after simulating measurement noise and refitting the nonlinear model.</li>
+        </ul>
+
+        <div class="warning"><b>Research-use caution:</b> protocol choices from this prototype should not be treated as validated ALPE acquisition recommendations. Before using the optimizer to determine a study protocol, the reduced ONP model should be replaced or benchmarked against the full published oxygen-transport model and real RespirAct/pulse-ox data.</div>
+      </section>
+    </section>
+  </main>
+
+  <footer>
+    <p>Static browser application. No data are uploaded or stored.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
