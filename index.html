@@ -56,10 +56,10 @@ details.model-notes{margin-top:15px;border-top:1px solid var(--border);padding-t
 .diagram-box-low{fill:color-mix(in srgb,var(--accent2) 7%,var(--surface));stroke:color-mix(in srgb,var(--accent2) 40%,var(--border))}
 .diagram-mix{fill:var(--accentsoft);stroke:color-mix(in srgb,var(--accent) 35%,var(--border));stroke-width:1.5}
 .diagram-arrow{stroke:var(--muted);stroke-width:2;fill:none;marker-end:url(#arrowhead)}
-.diagram-gas{stroke:var(--accent);stroke-width:3;fill:none;marker-end:url(#arrowheadGas)}
-.diagram-blood{stroke:var(--accent2);stroke-width:3;fill:none;marker-end:url(#arrowheadBlood)}
+.diagram-gas{stroke:var(--accent);stroke-width:3;fill:none;stroke-linecap:butt;marker-end:url(#arrowheadGas)}
+.diagram-blood{stroke:var(--accent2);stroke-width:3;fill:none;stroke-linecap:butt;marker-end:url(#arrowheadBlood)}
 .diagram-calc{stroke:var(--muted);stroke-width:1.8;fill:none;stroke-dasharray:6 5;marker-end:url(#arrowhead)}
-.diagram-shunt{stroke:var(--accent2);stroke-width:2.2;fill:none;marker-end:url(#arrowheadBlood)}
+.diagram-shunt{stroke:var(--accent2);stroke-width:2.2;fill:none;stroke-linecap:butt;marker-end:url(#arrowheadBlood)}
 .diagram-pill{fill:var(--surface2);stroke:var(--border);stroke-width:1}
 footer{text-align:center;color:var(--muted);font-size:.8rem;padding:0 20px 25px}
 .sim-stack{grid-template-columns:1fr}
@@ -150,9 +150,9 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;padding:0 20px 25px}
   <div class="model-diagram">
     <svg id="physiologyDiagram" viewBox="0 0 920 420" role="img" aria-label="Two-compartment ALPE physiology schematic">
       <defs>
-        <marker id="arrowhead" markerWidth="5" markerHeight="5" refX="4.1" refY="2.25" orient="auto"><polygon points="0 0, 4.8 2.25, 0 4.5" fill="var(--muted)"/></marker>
-        <marker id="arrowheadGas" markerWidth="5" markerHeight="5" refX="4.1" refY="2.25" orient="auto"><polygon points="0 0, 4.8 2.25, 0 4.5" fill="var(--accent)"/></marker>
-        <marker id="arrowheadBlood" markerWidth="5" markerHeight="5" refX="4.1" refY="2.25" orient="auto"><polygon points="0 0, 4.8 2.25, 0 4.5" fill="var(--accent2)"/></marker>
+        <marker id="arrowhead" viewBox="0 0 10 10" markerUnits="strokeWidth" markerWidth="3.4" markerHeight="3.0" refX="0" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="var(--muted)"/></marker>
+        <marker id="arrowheadGas" viewBox="0 0 10 10" markerUnits="strokeWidth" markerWidth="3.4" markerHeight="3.0" refX="0" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="var(--accent)"/></marker>
+        <marker id="arrowheadBlood" viewBox="0 0 10 10" markerUnits="strokeWidth" markerWidth="3.4" markerHeight="3.0" refX="0" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="var(--accent2)"/></marker>
       </defs>
 
       <text x="18" y="25" class="diagram-title">How the two-compartment model works · true simulated physiology</text>
@@ -538,12 +538,44 @@ function renderPhysiologyDiagram(p,true100){
   const width=f=>Math.max(1.4,1.4+8.0*clamp(f,0,1));
   const gas1=1-p.fa,gas2=p.fa,blood1=(1-p.sh)*0.10,blood2=(1-p.sh)*0.90,sh=p.sh;
 
-  for(const id of ['gasTo1','gasOut1'])$(id).style.strokeWidth=width(gas1);
-  for(const id of ['gasTo2','gasOut2'])$(id).style.strokeWidth=width(gas2);
-  for(const id of ['bloodTo1','bloodOut1'])$(id).style.strokeWidth=width(blood1);
-  for(const id of ['bloodTo2','bloodOut2'])$(id).style.strokeWidth=width(blood2);
-  $('shuntPath').style.strokeWidth=width(sh);
-  $('mixedBloodToArterial').style.strokeWidth=width(1-p.sh);
+  // Marker base is 3.0 × stroke width and marker length is 3.4 × stroke width.
+  // Since refX=0 is the arrowhead base, move the path endpoint backward by
+  // the head length so the arrow tip still lands exactly on the box boundary.
+  function shortenedEnd(target, prev, strokeW){
+    const desiredHeadLen=3.4*strokeW;
+    let dx=target[0]-prev[0],dy=target[1]-prev[1],L=Math.hypot(dx,dy)||1;
+    dx/=L;dy/=L;
+    // Never shorten past the final control point. Crossing it reverses the
+    // path's terminal tangent, which makes orient="auto" flip the marker.
+    // Keep at least 20% of the final segment in its original direction.
+    const headLen=Math.min(desiredHeadLen,0.80*L);
+    return [target[0]-dx*headLen,target[1]-dy*headLen];
+  }
+  function setPath(id, prefix, prev, target, strokeW){
+    const e=shortenedEnd(target,prev,strokeW);
+    $(id).setAttribute('d',prefix.replace('{EX}',e[0].toFixed(1)).replace('{EY}',e[1].toFixed(1)));
+    $(id).style.strokeWidth=strokeW;
+  }
+
+  const wg1=width(gas1),wg2=width(gas2),wb1=width(blood1),wb2=width(blood2),wsh=width(sh),wmix=width(1-p.sh);
+
+  // Into compartments: arrow tips stop at compartment left edge x=245.
+  setPath('gasTo1','M170 112 C205 112 210 120 {EX} {EY}',[210,120],[245,128],wg1);
+  setPath('gasTo2','M170 120 C205 150 212 238 {EX} {EY}',[212,238],[245,274],wg2);
+  setPath('bloodTo1','M170 298 C205 270 215 176 {EX} {EY}',[215,176],[245,165],wb1);
+  setPath('bloodTo2','M170 307 C205 307 215 300 {EX} {EY}',[215,300],[245,300],wb2);
+
+  // Into gas/blood mixing boxes: tips stop at left edge x=535.
+  setPath('gasOut1','M465 115 C495 110 510 110 {EX} {EY}',[510,110],[535,118],wg1);
+  setPath('gasOut2','M465 255 C500 235 510 156 {EX} {EY}',[510,156],[535,145],wg2);
+  setPath('bloodOut1','M465 164 C500 180 510 235 {EX} {EY}',[510,235],[535,255],wb1);
+  setPath('bloodOut2','M465 300 C490 300 500 292 {EX} {EY}',[500,292],[535,286],wb2);
+
+  // Capillary-mixed blood into arterial-output box: tip stops at x=755.
+  setPath('mixedBloodToArterial','M705 278 L{EX} {EY}',[705,278],[755,278],wmix);
+
+  // Shunt bypass: tip stops at the lower-left edge of arterial-output box.
+  setPath('shuntPath','M170 320 C350 390 630 382 {EX} {EY}',[630,382],[750,318],wsh);
 }
 function renderSim(){
   const p=simParams(),true100=lung(100,p.fa,p.sh,p.VA,p.Q,p.VO2,p.hb),fit100=lung(100,simFit.fa,simFit.sh,p.VA,p.Q,p.VO2,p.hb),rmse=Math.sqrt(simFit.sse/simData.length);
