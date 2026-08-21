@@ -52,9 +52,10 @@ details.model-notes{margin-top:15px;border-top:1px solid var(--border);padding-t
 .diagram-value{font-size:13px;font-weight:700;fill:var(--text)}
 .diagram-small{font-size:11px;fill:var(--muted)}
 .diagram-box{fill:var(--surface);stroke:var(--border);stroke-width:1.5}
-.diagram-box-hi{fill:color-mix(in srgb,var(--accent) 7%,var(--surface));stroke:color-mix(in srgb,var(--accent) 40%,var(--border))}
-.diagram-box-low{fill:color-mix(in srgb,var(--accent2) 7%,var(--surface));stroke:color-mix(in srgb,var(--accent2) 40%,var(--border))}
-.diagram-mix{fill:var(--accentsoft);stroke:color-mix(in srgb,var(--accent) 35%,var(--border));stroke-width:1.5}
+.diagram-box-hi{fill:color-mix(in srgb,var(--muted) 4%,var(--surface));stroke:var(--border)}
+.diagram-box-low{fill:color-mix(in srgb,var(--muted) 7%,var(--surface));stroke:var(--border)}
+.diagram-mix-gas{fill:color-mix(in srgb,var(--accent) 8%,var(--surface));stroke:color-mix(in srgb,var(--accent) 48%,var(--border));stroke-width:1.5}
+.diagram-mix-blood{fill:color-mix(in srgb,var(--accent2) 8%,var(--surface));stroke:color-mix(in srgb,var(--accent2) 48%,var(--border));stroke-width:1.5}
 .diagram-arrow{stroke:var(--muted);stroke-width:2;fill:none;marker-end:url(#arrowhead)}
 .diagram-gas{stroke:var(--accent);stroke-width:3;fill:none;stroke-linecap:butt;marker-end:url(#arrowheadGas)}
 .diagram-blood{stroke:var(--accent2);stroke-width:3;fill:none;stroke-linecap:butt;marker-end:url(#arrowheadBlood)}
@@ -200,7 +201,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;padding:0 20px 25px}
       <path id="bloodTo2" d="M170 307 C205 307 215 300 245 300" class="diagram-blood"/>
 
       <!-- Gas mixing -->
-      <rect x="535" y="82" width="170" height="88" rx="13" class="diagram-mix"/>
+      <rect x="535" y="82" width="170" height="88" rx="13" class="diagram-mix-gas"/>
       <text x="550" y="106" class="diagram-value">Expired-gas mixing</text>
       <text x="550" y="127" class="diagram-small">ventilation-weighted</text>
       <text x="550" y="150" id="diagPet" class="diagram-value">PETO₂ = —</text>
@@ -208,7 +209,7 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;padding:0 20px 25px}
       <path id="gasOut2" d="M465 255 C500 235 510 156 535 145" class="diagram-gas"/>
 
       <!-- Blood mixing -->
-      <rect x="535" y="230" width="170" height="88" rx="13" class="diagram-mix"/>
+      <rect x="535" y="230" width="170" height="88" rx="13" class="diagram-mix-blood"/>
       <text x="550" y="254" class="diagram-value">Capillary mixing</text>
       <text x="550" y="275" class="diagram-small">perfusion-weighted 10/90</text>
       <text x="550" y="298" id="diagPc" class="diagram-value">Pc′O₂ = —</text>
